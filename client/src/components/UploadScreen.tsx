@@ -20,9 +20,9 @@ export default function UploadScreen({ onFileSelect }: UploadScreenProps) {
   };
 
   return (
-    <div className="w-full max-w-md">
+    <div className="w-full flex flex-col items-center justify-center">
       <motion.div 
-        className="border-2 border-[#b026ff] rounded-lg p-8 bg-[#121212]/70 shadow-lg relative overflow-hidden"
+        className="w-full max-w-md border-2 border-[#b026ff] rounded-lg p-8 bg-[#121212]/70 shadow-lg relative overflow-hidden"
         animate={{ 
           boxShadow: ['0 0 10px #b026ff, 0 0 20px #b026ff, 0 0 30px #b026ff', 
                       '0 0 15px #0ef, 0 0 25px #0ef, 0 0 35px #0ef', 
@@ -77,24 +77,32 @@ export default function UploadScreen({ onFileSelect }: UploadScreenProps) {
         </div>
       </motion.div>
       
-      <div className="mt-8 text-center">
-        <h3 className="font-['Orbitron'] text-lg mb-3 text-[#0ef]">How it works:</h3>
-        <ol className="text-left max-w-sm mx-auto space-y-4">
+      <div className="mt-8 w-full max-w-md mx-auto">
+        <h3 className="font-['Orbitron'] text-lg mb-3 text-[#0ef] text-center">How it works:</h3>
+        <ol className="space-y-4">
           <li className="flex items-start">
-            <span className="bg-[#b026ff] rounded-full w-6 h-6 flex items-center justify-center mr-3 flex-shrink-0">1</span>
-            <span>Upload a screenshot (no data stored)</span>
+            <div className="bg-gradient-to-r from-[#b026ff] to-[#ff2d95] rounded-full w-8 h-8 flex items-center justify-center mr-3 flex-shrink-0 shadow-lg shadow-[#b026ff]/30">
+              <span className="text-white font-bold">1</span>
+            </div>
+            <span className="mt-1">Upload a screenshot (no data stored)</span>
           </li>
           <li className="flex items-start">
-            <span className="bg-[#b026ff] rounded-full w-6 h-6 flex items-center justify-center mr-3 flex-shrink-0">2</span>
-            <span>AI analyzes the <span className="text-[#ff2d95]">digital energy</span> of your image</span>
+            <div className="bg-gradient-to-r from-[#b026ff] to-[#ff2d95] rounded-full w-8 h-8 flex items-center justify-center mr-3 flex-shrink-0 shadow-lg shadow-[#b026ff]/30">
+              <span className="text-white font-bold">2</span>
+            </div>
+            <span className="mt-1">AI analyzes the <span className="text-[#ff2d95] font-bold">digital energy</span> of your image</span>
           </li>
           <li className="flex items-start">
-            <span className="bg-[#b026ff] rounded-full w-6 h-6 flex items-center justify-center mr-3 flex-shrink-0">3</span>
-            <span>Get your <span className="text-[#0ef]">Aura</span> & <span className="text-[#ff2d95]">Rizz</span> scores</span>
+            <div className="bg-gradient-to-r from-[#0ef] to-[#b026ff] rounded-full w-8 h-8 flex items-center justify-center mr-3 flex-shrink-0 shadow-lg shadow-[#0ef]/30">
+              <span className="text-white font-bold">3</span>
+            </div>
+            <span className="mt-1">Get your <span className="text-[#0ef] font-bold">Aura</span> & <span className="text-[#ff2d95] font-bold">Rizz</span> scores</span>
           </li>
           <li className="flex items-start">
-            <span className="bg-[#b026ff] rounded-full w-6 h-6 flex items-center justify-center mr-3 flex-shrink-0">4</span>
-            <span>Share your digital essence (or keep it private)</span>
+            <div className="bg-gradient-to-r from-[#0ef] to-[#b026ff] rounded-full w-8 h-8 flex items-center justify-center mr-3 flex-shrink-0 shadow-lg shadow-[#0ef]/30">
+              <span className="text-white font-bold">4</span>
+            </div>
+            <span className="mt-1">Share your digital essence (or keep it private)</span>
           </li>
         </ol>
       </div>

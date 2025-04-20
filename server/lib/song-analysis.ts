@@ -51,7 +51,7 @@ Return as a JSON object with these properties: mysticTitle, auraScore, rizzScore
         rizzScore: Math.min(100, Math.max(1, result.rizzScore || 50)),
         analysisText: result.analysisText || "Failed to analyze this song's energy pattern."
       };
-    } catch (openaiError) {
+    } catch (openaiError: any) {
       console.log("OpenAI analysis failed, falling back to Gemini:", openaiError.message);
       
       // If OpenAI fails, try with Gemini

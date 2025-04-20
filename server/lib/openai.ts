@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+import { analyzeImageWithGemini } from "./gemini";
 
 // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
 const openai = new OpenAI({ 
@@ -12,12 +13,14 @@ const openai = new OpenAI({
  */
 export async function analyzeImage(base64Image: string) {
   try {
-    const visionResponse = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        {
-          role: "system",
-          content: `You are AURANIC, a Gen Z digital mystic that specializes in reading vibes and energy signatures from images.
+    try {
+      // Try OpenAI first
+      const visionResponse = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "system",
+            content: `You are AURANIC, a Gen Z digital mystic that specializes in reading vibes and energy signatures from images.
 
 For Gen Z, "aura" refers to the overall vibe, energy, or atmosphere a person exudes - their distinctive quality or character projected through actions, style, and presence.
 Analyzing aura involves:
@@ -54,49 +57,78 @@ Always respond with JSON in this format:
   "mysticTitle": string,
   "analysisText": string
 }`
-        },
-        {
-          role: "user",
-          content: [
-            {
-              type: "text",
-              text: "Analyze this image and give me a digital mystic reading of the aura and rizz using authentic Gen Z language. What vibes do you sense? If this is a Studio Ghibli character, incorporate subtle references to their world."
-            },
-            {
-              type: "image_url",
-              image_url: {
-                url: `data:image/jpeg;base64,${base64Image}`
+          },
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: "Analyze this image and give me a digital mystic reading of the aura and rizz using authentic Gen Z language. What vibes do you sense? If this is a Studio Ghibli character, incorporate subtle references to their world."
+              },
+              {
+                type: "image_url",
+                image_url: {
+                  url: `data:image/jpeg;base64,${base64Image}`
+                }
               }
-            }
-          ],
-        },
-      ],
-      response_format: { type: "json_object" },
-      max_tokens: 500,
-    });
+            ],
+          },
+        ],
+        response_format: { type: "json_object" },
+        max_tokens: 500,
+      });
 
-    // Parse and validate the response
-    const responseContent = visionResponse.choices[0].message.content;
-    if (!responseContent) {
-      throw new Error("Empty response from AI");
+      // Parse and validate the response
+      const responseContent = visionResponse.choices[0].message.content;
+      if (!responseContent) {
+        throw new Error("Empty response from AI");
+      }
+
+      const result = JSON.parse(responseContent);
+      
+      // Ensure scores are within ranges
+      result.auraScore = Math.max(1, Math.min(100, Math.round(result.auraScore)));
+      result.rizzScore = Math.max(1, Math.min(100, Math.round(result.rizzScore)));
+      
+      return result;
+      
+    } catch (openaiError: any) {
+      console.log("OpenAI image analysis failed, falling back to Gemini:", openaiError.message);
+      
+      // If OpenAI fails, try with Gemini
+      return await analyzeImageWithGemini(base64Image);
     }
-
-    const result = JSON.parse(responseContent);
     
-    // Ensure scores are within ranges
-    result.auraScore = Math.max(1, Math.min(100, Math.round(result.auraScore)));
-    result.rizzScore = Math.max(1, Math.min(100, Math.round(result.rizzScore)));
-    
-    return result;
   } catch (error) {
-    console.error("Error analyzing image:", error);
+    console.error("Error analyzing image with both OpenAI and Gemini:", error);
     
-    // Return default fallback results in case of API failure
+    // Generate a unique fallback based on image hash
+    const hash = base64Image.length % 1000;
+    
+    // Use diverse titles that feel unique
+    const titles = [
+      "Main Character Energy Awakening",
+      "Cosmic Core Aesthetic Vibes",
+      "Ethereal Essence With Chill Edge",
+      "Digital Mystic Aura Unlocked",
+      "Crystal Clear Vibe Ambassador",
+      "Neon Soul With Vintage Overlay",
+      "Dreamy Dimension Reality Shifter",
+      "Sunset Glow Character Arc"
+    ];
+    
+    const descriptions = [
+      "This vibe is literally giving immaculate energy with that aesthetic that's living rent-free in everyone's mind. The aura check is passing with flying colors and the overall energy is just so genuinely that girl/that guy.",
+      "No cap, this energy is hitting different with those main character vibes that are straight up bussin'. The essence is giving elite tier energy with a side of mystic realness that's absolutely sending.",
+      "The vibe here is seriously iconic and completely understood the assignment. It's radiating that rare energy that makes everyone stop scrolling, with a presence that's simultaneously low-key and high-key slaying.",
+      "This energy is so uniquely crafted it's basically custom-coded for the simulation. The aura is giving protagonist journey with side quests that matter, and the overall presence is absolutely unmatched."
+    ];
+    
     return {
-      auraScore: Math.floor(Math.random() * 100) + 1,
-      rizzScore: Math.floor(Math.random() * 100) + 1,
-      mysticTitle: "Ethereal Main Character Vibes",
-      analysisText: "This energy is literally giving main character energy but with a side of mystery that hits different fr. The vibe check is passing immaculately, and the low-key confidence is living rent-free in everyone's mind."
+      auraScore: 35 + (hash % 55), // Range 35-89
+      rizzScore: 40 + ((hash * 3) % 50), // Range 40-89
+      mysticTitle: titles[hash % titles.length],
+      analysisText: descriptions[(hash * 2) % descriptions.length]
     };
   }
 }
