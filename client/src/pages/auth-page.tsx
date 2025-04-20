@@ -81,22 +81,43 @@ export default function AuthPage() {
             <p className="text-muted-foreground text-gray-400">Discover your digital aura & rizz</p>
           </div>
           
-          <Card className="border-purple-700 bg-black/50 backdrop-blur-lg text-white">
-            <CardHeader>
+          <Card className="border-2 border-purple-600/80 bg-gradient-to-br from-black via-purple-950/20 to-black/95 backdrop-blur-lg text-white shadow-[0_0_15px_rgba(147,51,234,0.3)] rounded-xl overflow-hidden">
+            <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxkZWZzPjxwYXR0ZXJuIGlkPSJncmlkIiB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHBhdHRlcm5Vbml0cz0idXNlclNwYWNlT25Vc2UiPjxwYXRoIGQ9Ik0gMjAgMCBMIDAgMCAwIDIwIiBmaWxsPSJub25lIiBzdHJva2U9InJnYmEoMTM4LCA0MywgMjI2LCAwLjEpIiBzdHJva2Utd2lkdGg9IjEiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JpZCkiLz48L3N2Zz4=')]"></div>
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-600/0 via-purple-600 to-purple-600/0"></div>
+            
+            <CardHeader className="relative">
               <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "login" | "register")}>
-                <TabsList className="grid w-full grid-cols-2 bg-black/60">
-                  <TabsTrigger value="login">Login</TabsTrigger>
-                  <TabsTrigger value="register">Register</TabsTrigger>
+                <TabsList className="grid w-full grid-cols-2 bg-black/60 border border-purple-500/50 rounded-lg overflow-hidden">
+                  <TabsTrigger 
+                    value="login" 
+                    className="data-[state=active]:bg-gradient-to-b data-[state=active]:from-purple-600/50 data-[state=active]:to-purple-900/30 data-[state=active]:text-white text-gray-400 py-3 transition-all duration-300"
+                  >
+                    Login
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="register" 
+                    className="data-[state=active]:bg-gradient-to-b data-[state=active]:from-purple-600/50 data-[state=active]:to-purple-900/30 data-[state=active]:text-white text-gray-400 py-3 transition-all duration-300"
+                  >
+                    Register
+                  </TabsTrigger>
                 </TabsList>
                 
                 <TabsContent value="login" className="mt-4">
-                  <CardTitle>Welcome Back</CardTitle>
-                  <CardDescription className="text-gray-400">Enter your credentials to continue your mystical journey</CardDescription>
+                  <CardTitle className="text-transparent bg-clip-text bg-gradient-to-r from-purple-300 to-pink-300 text-2xl font-bold tracking-wide">
+                    Access Your Digital Aura
+                  </CardTitle>
+                  <CardDescription className="text-purple-200/70">
+                    Enter your credentials to continue your mystical journey
+                  </CardDescription>
                 </TabsContent>
                 
                 <TabsContent value="register" className="mt-4">
-                  <CardTitle>Create Account</CardTitle>
-                  <CardDescription className="text-gray-400">Join the AURANIC community to discover hidden energies</CardDescription>
+                  <CardTitle className="text-transparent bg-clip-text bg-gradient-to-r from-purple-300 to-pink-300 text-2xl font-bold tracking-wide">
+                    Create Your Energy Profile
+                  </CardTitle>
+                  <CardDescription className="text-purple-200/70">
+                    Join the AURANIC community to discover hidden vibes
+                  </CardDescription>
                 </TabsContent>
               </Tabs>
             </CardHeader>
@@ -110,11 +131,21 @@ export default function AuthPage() {
                       name="username"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Username</FormLabel>
+                          <FormLabel className="text-purple-300 font-medium">Username</FormLabel>
                           <FormControl>
-                            <Input placeholder="Enter your username" {...field} className="bg-black/60 border-purple-800" />
+                            <div className="relative group">
+                              <Input 
+                                placeholder="Enter your username" 
+                                {...field} 
+                                className="bg-black/40 border-purple-600/50 focus:border-purple-400 border-2 rounded-lg py-6 pl-4 pr-10 font-medium text-white/90 placeholder:text-gray-500 placeholder:font-normal transition-all duration-300 focus-visible:ring-1 focus-visible:ring-offset-1 ring-offset-purple-800 focus-visible:ring-purple-400" 
+                              />
+                              <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-purple-600/20 to-pink-600/20 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-300"></div>
+                              <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-purple-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                @
+                              </div>
+                            </div>
                           </FormControl>
-                          <FormMessage />
+                          <FormMessage className="text-pink-400" />
                         </FormItem>
                       )}
                     />
@@ -124,11 +155,22 @@ export default function AuthPage() {
                       name="password"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Password</FormLabel>
+                          <FormLabel className="text-purple-300 font-medium">Password</FormLabel>
                           <FormControl>
-                            <Input type="password" placeholder="Enter your password" {...field} className="bg-black/60 border-purple-800" />
+                            <div className="relative group">
+                              <Input 
+                                type="password" 
+                                placeholder="Enter your password" 
+                                {...field} 
+                                className="bg-black/40 border-purple-600/50 focus:border-purple-400 border-2 rounded-lg py-6 pl-4 pr-10 font-medium text-white/90 placeholder:text-gray-500 placeholder:font-normal transition-all duration-300 focus-visible:ring-1 focus-visible:ring-offset-1 ring-offset-purple-800 focus-visible:ring-purple-400" 
+                              />
+                              <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-purple-600/20 to-pink-600/20 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-300"></div>
+                              <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-purple-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                🔒
+                              </div>
+                            </div>
                           </FormControl>
-                          <FormMessage />
+                          <FormMessage className="text-pink-400" />
                         </FormItem>
                       )}
                     />
@@ -136,15 +178,22 @@ export default function AuthPage() {
                     <Button 
                       type="submit" 
                       disabled={loginMutation.isPending} 
-                      className="w-full bg-gradient-to-r from-purple-700 to-blue-600 hover:from-purple-800 hover:to-blue-700"
+                      className="w-full relative py-6 overflow-hidden group bg-gradient-to-br from-purple-600 to-indigo-700 hover:from-purple-500 hover:to-indigo-600 text-white font-medium rounded-lg text-lg shadow-lg shadow-purple-500/30 transition-all duration-300"
                     >
-                      {loginMutation.isPending ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Logging in...
-                        </>
-                      ) : (
-                        "Login"
-                      )}
+                      <span className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 group-hover:translate-x-full transition-all duration-1000 ease-in-out"></span>
+                      <span className="relative flex items-center justify-center">
+                        {loginMutation.isPending ? (
+                          <>
+                            <Loader2 className="mr-2 h-5 w-5 animate-spin" /> 
+                            <span className="animate-pulse">Accessing Mystic Portal...</span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="mr-2">✨</span>
+                            <span>Enter the Vibe</span>
+                          </>
+                        )}
+                      </span>
                     </Button>
                   </form>
                 </Form>
@@ -156,11 +205,21 @@ export default function AuthPage() {
                       name="username"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Username</FormLabel>
+                          <FormLabel className="text-purple-300 font-medium">Username</FormLabel>
                           <FormControl>
-                            <Input placeholder="Choose a username" {...field} className="bg-black/60 border-purple-800" />
+                            <div className="relative group">
+                              <Input 
+                                placeholder="Choose a username" 
+                                {...field} 
+                                className="bg-black/40 border-purple-600/50 focus:border-purple-400 border-2 rounded-lg py-6 pl-4 pr-10 font-medium text-white/90 placeholder:text-gray-500 placeholder:font-normal transition-all duration-300 focus-visible:ring-1 focus-visible:ring-offset-1 ring-offset-purple-800 focus-visible:ring-purple-400" 
+                              />
+                              <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-purple-600/20 to-pink-600/20 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-300"></div>
+                              <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-purple-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                @
+                              </div>
+                            </div>
                           </FormControl>
-                          <FormMessage />
+                          <FormMessage className="text-pink-400" />
                         </FormItem>
                       )}
                     />
@@ -170,11 +229,22 @@ export default function AuthPage() {
                       name="email"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Email</FormLabel>
+                          <FormLabel className="text-purple-300 font-medium">Email</FormLabel>
                           <FormControl>
-                            <Input type="email" placeholder="Enter your email" {...field} className="bg-black/60 border-purple-800" />
+                            <div className="relative group">
+                              <Input 
+                                type="email" 
+                                placeholder="Enter your email" 
+                                {...field} 
+                                className="bg-black/40 border-purple-600/50 focus:border-purple-400 border-2 rounded-lg py-6 pl-4 pr-10 font-medium text-white/90 placeholder:text-gray-500 placeholder:font-normal transition-all duration-300 focus-visible:ring-1 focus-visible:ring-offset-1 ring-offset-purple-800 focus-visible:ring-purple-400" 
+                              />
+                              <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-purple-600/20 to-pink-600/20 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-300"></div>
+                              <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-purple-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                ✉️
+                              </div>
+                            </div>
                           </FormControl>
-                          <FormMessage />
+                          <FormMessage className="text-pink-400" />
                         </FormItem>
                       )}
                     />
@@ -184,11 +254,22 @@ export default function AuthPage() {
                       name="password"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Password</FormLabel>
+                          <FormLabel className="text-purple-300 font-medium">Password</FormLabel>
                           <FormControl>
-                            <Input type="password" placeholder="Create a password" {...field} className="bg-black/60 border-purple-800" />
+                            <div className="relative group">
+                              <Input 
+                                type="password" 
+                                placeholder="Create a password" 
+                                {...field} 
+                                className="bg-black/40 border-purple-600/50 focus:border-purple-400 border-2 rounded-lg py-6 pl-4 pr-10 font-medium text-white/90 placeholder:text-gray-500 placeholder:font-normal transition-all duration-300 focus-visible:ring-1 focus-visible:ring-offset-1 ring-offset-purple-800 focus-visible:ring-purple-400" 
+                              />
+                              <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-purple-600/20 to-pink-600/20 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-300"></div>
+                              <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-purple-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                🔒
+                              </div>
+                            </div>
                           </FormControl>
-                          <FormMessage />
+                          <FormMessage className="text-pink-400" />
                         </FormItem>
                       )}
                     />
@@ -198,11 +279,22 @@ export default function AuthPage() {
                       name="confirmPassword"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Confirm Password</FormLabel>
+                          <FormLabel className="text-purple-300 font-medium">Confirm Password</FormLabel>
                           <FormControl>
-                            <Input type="password" placeholder="Confirm your password" {...field} className="bg-black/60 border-purple-800" />
+                            <div className="relative group">
+                              <Input 
+                                type="password" 
+                                placeholder="Confirm your password" 
+                                {...field} 
+                                className="bg-black/40 border-purple-600/50 focus:border-purple-400 border-2 rounded-lg py-6 pl-4 pr-10 font-medium text-white/90 placeholder:text-gray-500 placeholder:font-normal transition-all duration-300 focus-visible:ring-1 focus-visible:ring-offset-1 ring-offset-purple-800 focus-visible:ring-purple-400" 
+                              />
+                              <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-purple-600/20 to-pink-600/20 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-300"></div>
+                              <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-purple-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                ✅
+                              </div>
+                            </div>
                           </FormControl>
-                          <FormMessage />
+                          <FormMessage className="text-pink-400" />
                         </FormItem>
                       )}
                     />
@@ -210,15 +302,22 @@ export default function AuthPage() {
                     <Button 
                       type="submit" 
                       disabled={registerMutation.isPending} 
-                      className="w-full bg-gradient-to-r from-purple-700 to-blue-600 hover:from-purple-800 hover:to-blue-700"
+                      className="w-full relative py-6 overflow-hidden group bg-gradient-to-br from-purple-600 to-indigo-700 hover:from-purple-500 hover:to-indigo-600 text-white font-medium rounded-lg text-lg shadow-lg shadow-purple-500/30 transition-all duration-300"
                     >
-                      {registerMutation.isPending ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating Account...
-                        </>
-                      ) : (
-                        "Create Account"
-                      )}
+                      <span className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 group-hover:translate-x-full transition-all duration-1000 ease-in-out"></span>
+                      <span className="relative flex items-center justify-center">
+                        {registerMutation.isPending ? (
+                          <>
+                            <Loader2 className="mr-2 h-5 w-5 animate-spin" /> 
+                            <span className="animate-pulse">Creating Energy Profile...</span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="mr-2">🔮</span>
+                            <span>Join the Vibe</span>
+                          </>
+                        )}
+                      </span>
                     </Button>
                   </form>
                 </Form>

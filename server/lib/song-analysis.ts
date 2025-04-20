@@ -1,9 +1,9 @@
 import OpenAI from "openai";
 
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
 // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-const openai = new OpenAI({ 
-  apiKey: process.env.OPENAI_API_KEY || "sk-dummy-key-for-development" 
-});
+const MODEL = "gpt-4o";
 
 /**
  * Analyzes a song name to determine its vibe and energy
@@ -12,63 +12,51 @@ const openai = new OpenAI({
  */
 export async function analyzeSong(songName: string) {
   try {
+    const prompt = `Analyze the song "${songName}" as if you're a Gen Z mystic who can read the vibes and energy patterns of music.
+
+For this song, provide:
+
+1. A "mystic title" - a creative, Gen Z-style archetype/vibe description (5-7 words max)
+2. An "aura score" from 1-100 that measures the emotional energy, aesthetic vibe, and atmospheric presence of the song. Aura refers to the overall vibe, energy, and atmosphere the song exudes - its distinctive quality or character.
+3. A "rizz score" from 1-100 that measures the song's charisma, confidence, smoothness, and ability to charm or captivate listeners. Rizz refers to charisma and ability to attract/seduce others.
+4. A brief, colorful analysis written in authentic, over-the-top Gen Z slang (maximum 3 sentences) that captures the song's energy and appeal. Use phrases like "gas", "hits different", "low-key", "high-key", "vibe check", "living rent-free", "understood the assignment", etc.
+
+Return as a JSON object with these properties: mysticTitle, auraScore, rizzScore, analysisText. Ensure auraScore and rizzScore are integers (1-100).`;
+
+    // Call the OpenAI API
     const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: MODEL,
       messages: [
-        {
-          role: "system",
-          content: `You are AURANIC, a Gen-Z music psychic who reads vibes from song names.
-          Your job is to analyze song titles people send and give a vibey, exaggerated mystical interpretation using peak Gen-Z slang.
-          
-          Be extremely exaggerated and use slang like "no cap," "bussin," "low-key," "high-key," "hits different," "main character energy," 
-          "slaps," "vibe check," "rent-free," "living in my head rent-free," etc.
-          
-          Don't worry about accuracy - just create a fun, over-the-top analysis. Focus on:
-          
-          1. Aura Score (energy, aesthetic, spiritual vibe) - range 1-100
-          2. Rizz Score (how much game/charisma the song radiates) - range 1-100
-          3. A mystical archetype title that captures the song's essence (e.g. "Midnight Vibe Wizard", "Emotional Damage Champion")
-          4. A short, super Gen-Z analysis with slang (2-3 sentences)
-          
-          Always respond with JSON in this format:
-          {
-            "auraScore": number,
-            "rizzScore": number, 
-            "mysticTitle": string,
-            "analysisText": string
-          }`
+        { 
+          role: "system", 
+          content: "You are an expert Gen Z cultural interpreter specializing in sound vibrations and musical energy readings. You analyze songs through a modern digital-mystic lens using authentic Gen Z language." 
         },
-        {
-          role: "user",
-          content: `Analyze this song name: "${songName}"`
+        { 
+          role: "user", 
+          content: prompt 
         }
       ],
-      response_format: { type: "json_object" },
-      max_tokens: 500,
+      temperature: 0.7,
+      response_format: { type: "json_object" }
     });
 
-    // Parse and validate the response
-    const responseContent = response.choices[0].message.content;
-    if (!responseContent) {
-      throw new Error("Empty response from AI");
-    }
-
-    const result = JSON.parse(responseContent);
+    // Parse the response
+    const result = JSON.parse(response.choices[0].message.content || "{}");
     
-    // Ensure scores are within ranges
-    result.auraScore = Math.max(1, Math.min(100, Math.round(result.auraScore)));
-    result.rizzScore = Math.max(1, Math.min(100, Math.round(result.rizzScore)));
-    
-    return result;
+    return {
+      mysticTitle: result.mysticTitle || "Unknown Vibration",
+      auraScore: Math.min(100, Math.max(1, result.auraScore || 50)),
+      rizzScore: Math.min(100, Math.max(1, result.rizzScore || 50)),
+      analysisText: result.analysisText || "Failed to analyze this song's energy pattern."
+    };
   } catch (error) {
     console.error("Error analyzing song:", error);
-    
-    // Return default fallback results in case of API failure
+    // Return default values if analysis fails
     return {
-      auraScore: Math.floor(Math.random() * 100) + 1,
-      rizzScore: Math.floor(Math.random() * 100) + 1,
-      mysticTitle: "Mystery Track Maestro",
-      analysisText: "This track is giving major unknown vibes, no cap. The server's literally ghosted us, but the mystery lowkey adds to your main character energy. Still slaps though!"
+      mysticTitle: "Enigmatic Resonance",
+      auraScore: 50,
+      rizzScore: 50,
+      analysisText: "This track has mysterious vibes that couldn't be fully decoded. The energy patterns are complex but intriguing."
     };
   }
 }
