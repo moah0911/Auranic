@@ -88,56 +88,67 @@ export default function ResultsScreen({ result, onScanAgain }: ResultsScreenProp
 
   // Function to share the result card as an image
   const handleShare = async () => {
-    if (resultCardRef.current) {
-      try {
-        const canvas = await html2canvas(resultCardRef.current, {
-          backgroundColor: '#121212',
-          scale: 2, // Higher resolution
-          logging: false,
-        });
-        
-        const image = canvas.toDataURL('image/png');
-        
-        try {
-          if (navigator.share) {
-            await navigator.share({
-              title: `My ${isSongAnalysis ? 'Song' : 'Aura'} Analysis`,
-              text: `Check out my ${isSongAnalysis ? 'song' : 'aura'} analysis from AURANIC!`,
-              files: [new File([dataURItoBlob(image)], 'auranic-analysis.png', { type: 'image/png' })]
-            });
-            return;
-          }
-        } catch (shareError) {
-          console.error('Share API error:', shareError);
-        }
-        
-        // Fallback to copying image to clipboard
-        try {
-          canvas.toBlob(async (blob) => {
-            if (blob) {
-              const clipboardItem = new ClipboardItem({ 'image/png': blob });
-              await navigator.clipboard.write([clipboardItem]);
-              toast({
-                title: "Vibe captured!",
-                description: "Result card copied to clipboard. Share your energy!",
-              });
-            }
-          });
-        } catch (clipError) {
-          console.error('Clipboard error:', clipError);
-          
-          // Final fallback - open in new tab
-          const tab = window.open();
-          tab?.document.write(`<img src="${image}" alt="Analysis result" />`);
-        }
-      } catch (error) {
-        console.error('Error creating shareable image:', error);
-        toast({
-          title: "Sharing failed",
-          description: "Could not create shareable image",
-          variant: "destructive"
-        });
+    if (!resultCardRef.current) return;
+    
+    try {
+      // Temporarily hide action buttons during screenshot
+      const actionButtons = resultCardRef.current.querySelector('.action-buttons');
+      if (actionButtons) {
+        actionButtons.classList.add('hidden');
       }
+      
+      const canvas = await html2canvas(resultCardRef.current, {
+        backgroundColor: '#121212',
+        scale: 2, // Higher resolution
+        logging: false,
+      });
+      
+      // Show buttons again after screenshot is taken
+      if (actionButtons) {
+        actionButtons.classList.remove('hidden');
+      }
+      
+      const image = canvas.toDataURL('image/png');
+      
+      try {
+        if (navigator.share) {
+          await navigator.share({
+            title: `My ${isSongAnalysis ? 'Song' : 'Aura'} Analysis`,
+            text: `Check out my ${isSongAnalysis ? 'song' : 'aura'} analysis from AURANIC!`,
+            files: [new File([dataURItoBlob(image)], 'auranic-analysis.png', { type: 'image/png' })]
+          });
+          return;
+        }
+      } catch (shareError) {
+        console.error('Share API error:', shareError);
+      }
+      
+      // Fallback to copying image to clipboard
+      try {
+        canvas.toBlob(async (blob) => {
+          if (blob) {
+            const clipboardItem = new ClipboardItem({ 'image/png': blob });
+            await navigator.clipboard.write([clipboardItem]);
+            toast({
+              title: "Vibe captured!",
+              description: "Result card copied to clipboard. Share your energy!",
+            });
+          }
+        });
+      } catch (clipError) {
+        console.error('Clipboard error:', clipError);
+        
+        // Final fallback - open in new tab
+        const tab = window.open();
+        tab?.document.write(`<img src="${image}" alt="Analysis result" />`);
+      }
+    } catch (error) {
+      console.error('Error creating shareable image:', error);
+      toast({
+        title: "Sharing failed",
+        description: "Could not create shareable image",
+        variant: "destructive"
+      });
     }
   };
 
@@ -214,10 +225,10 @@ export default function ResultsScreen({ result, onScanAgain }: ResultsScreenProp
         <div className="h-[3px] w-full bg-gradient-to-r from-[#0ef] via-[#b026ff] to-[#ff2d95] rounded-full mb-6"></div>
         
         {/* Mystic title */}
-        <div className="text-center mb-7">
+        <div className="text-center mb-5">
           <span className="text-xs text-gray-400 uppercase">YOUR MYSTIC ARCHETYPE</span>
           <motion.h3 
-            className="font-['VT323'] text-3xl md:text-4xl bg-clip-text text-transparent bg-gradient-to-r from-[#0ef] via-[#b026ff] to-[#ff2d95]"
+            className="font-['VT323'] text-3xl md:text-4xl text-white mt-2 leading-tight"
             variants={glitchAnimation}
           >
             {result.mysticTitle}
@@ -258,7 +269,7 @@ export default function ResultsScreen({ result, onScanAgain }: ResultsScreenProp
         </div>
         
         {/* Action buttons */}
-        <div className="grid grid-cols-2 gap-4 text-center">
+        <div className="grid grid-cols-2 gap-4 text-center action-buttons">
           <motion.button 
             className="group relative bg-gradient-to-r from-[#b026ff] to-[#9925ff] text-white font-['Orbitron'] py-3 px-4 rounded-lg shadow-lg shadow-[#b026ff]/30 overflow-hidden"
             whileHover={{ scale: 1.05 }}
