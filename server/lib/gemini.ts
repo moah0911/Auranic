@@ -1,10 +1,11 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { AI_CONFIG } from "../config";
 
 // Initialize the Google Generative AI with your API key
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
+const genAI = new GoogleGenerativeAI(AI_CONFIG.gemini.apiKey);
 
 // Gemini model for multimodal content
-const MODEL_NAME = "gemini-1.5-pro-latest";
+const MODEL_NAME = AI_CONFIG.gemini.defaultModel;
 
 /**
  * Analyzes a song name using Google's Gemini API.
