@@ -2,6 +2,7 @@
  * Central configuration file for all environment variables and API keys
  * This helps manage all external connections and secrets in one place
  */
+import { randomBytes } from 'crypto';
 
 // Database configuration
 export const DATABASE_CONFIG = {
@@ -44,8 +45,7 @@ export const SESSION_CONFIG = {
 
 // Generate a secure session secret if one is not provided
 function generateSessionSecret(): string {
-  const crypto = require('crypto');
-  return `auranic-${crypto.randomBytes(32).toString('hex')}-${Date.now()}`;
+  return `auranic-${randomBytes(32).toString('hex')}-${Date.now()}`;
 }
 
 // Server configuration

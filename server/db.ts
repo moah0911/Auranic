@@ -26,8 +26,9 @@ if (!DATABASE_CONFIG.url) {
 }
 
 // Set up database connection for Drizzle ORM
-// If DATABASE_URL is not set, use Supabase URL with REST API path
-const connectionString = DATABASE_CONFIG.url || `${SUPABASE_CONFIG.url}/rest/v1`;
+// If DATABASE_URL is not set, use Supabase URL with PostgreSQL connection string
+// Note: This requires setting up a PostgreSQL database in Supabase
+const connectionString = DATABASE_CONFIG.url || SUPABASE_CONFIG.url;
 export const pool = new Pool({ connectionString });
 export const db = drizzle({ client: pool, schema });
 

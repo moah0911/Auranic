@@ -31,7 +31,16 @@ The application will automatically generate a secure session secret if one is no
 
 ## Database Configuration
 
-All database operations are handled through Supabase. The application uses the Supabase REST API for database operations, and the Supabase client for authentication.
+All database operations are handled through Supabase. The application uses the Supabase client for authentication and database operations.
+
+For direct database access (required for Drizzle ORM), you need to set up a PostgreSQL connection string in your Supabase project:
+
+```
+# Get this from Supabase: Project Settings > Database > Connection string > URI
+DATABASE_URL="postgresql://postgres:[YOUR-PASSWORD]@db.[YOUR-PROJECT-REF].supabase.co:5432/postgres"
+```
+
+If `DATABASE_URL` is not provided, the application will attempt to use the Supabase URL directly, but this may not work for all database operations.
 
 ## Getting Started
 
