@@ -1,17 +1,19 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "@/hooks/use-auth";
 import { Redirect } from "wouter";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { FaUserAstronaut, FaLock, FaEnvelope, FaRegEye, FaRegEyeSlash } from "react-icons/fa";
+import { HiOutlineSparkles } from "react-icons/hi";
 import { Loader2 } from "lucide-react";
 import { insertUserSchema } from "@shared/schema";
-import { getRandomGlitchBackground, getRandomNeonTexture } from "@/lib/utils";
+import { getRandomGlitchBackground } from "@/lib/utils";
+import { glitchText, scannerAnimation } from "@/lib/animations";
 
 // Create schema for login
 const loginSchema = z.object({
@@ -19,133 +21,195 @@ const loginSchema = z.object({
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
-// Create schema for registration by extending the insertUserSchema
+type LoginFormValues = z.infer<typeof loginSchema>;
+
+// Extend registration schema for the form
 const registerSchema = insertUserSchema.extend({
-  confirmPassword: z.string(),
-}).refine(data => data.password === data.confirmPassword, {
+  confirmPassword: z.string().min(6, "Password must be at least 6 characters"),
+}).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords do not match",
   path: ["confirmPassword"]
 });
 
+type RegisterFormValues = z.infer<typeof registerSchema>;
+
 export default function AuthPage() {
   const { user, loginMutation, registerMutation } = useAuth();
   const [activeTab, setActiveTab] = useState<"login" | "register">("login");
+  const [bgImageLoaded, setBgImageLoaded] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const glitchBg = getRandomGlitchBackground();
   
-  // For login form
-  const loginForm = useForm<z.infer<typeof loginSchema>>({
+  useEffect(() => {
+    // Preload background image
+    const img = new Image();
+    img.src = glitchBg;
+    img.onload = () => setBgImageLoaded(true);
+  }, [glitchBg]);
+
+  // Create form for login
+  const loginForm = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
       username: "",
-      password: "",
-    },
+      password: ""
+    }
   });
 
-  // For registration form
-  const registerForm = useForm<z.infer<typeof registerSchema>>({
+  // Create form for registration
+  const registerForm = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
       username: "",
       email: "",
       password: "",
-      confirmPassword: "",
-    },
+      confirmPassword: ""
+    }
   });
 
-  // Handle login form submission
-  const onLoginSubmit = (data: z.infer<typeof loginSchema>) => {
-    loginMutation.mutate(data);
-  };
-
-  // Handle registration form submission
-  const onRegisterSubmit = (data: z.infer<typeof registerSchema>) => {
-    // Omit confirmPassword as it's not in InsertUser type
-    const { confirmPassword, ...registrationData } = data;
-    registerMutation.mutate(registrationData);
-  };
-
-  // If user is already logged in, redirect to home page
+  // If user is already logged in, redirect to home
   if (user) {
     return <Redirect to="/" />;
   }
 
-  // Random background for aesthetics
-  const glitchBg = getRandomGlitchBackground();
-  
+  // Handle login submission
+  const onLoginSubmit = (values: LoginFormValues) => {
+    loginMutation.mutate(values);
+  };
+
+  // Handle registration submission
+  const onRegisterSubmit = (values: RegisterFormValues) => {
+    const { confirmPassword, ...registerData } = values;
+    registerMutation.mutate(registerData);
+  };
+
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
+
+  const toggleConfirmPasswordVisibility = () => {
+    setShowConfirmPassword(!showConfirmPassword);
+  };
+
   return (
-    <div className="min-h-screen flex flex-col md:flex-row">
-      {/* Auth Form Section */}
-      <div className="w-full md:w-1/2 p-6 md:p-10 flex flex-col justify-center items-center bg-black">
-        <div className="w-full max-w-md space-y-6">
-          <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold tracking-tight text-purple-400 mb-2">AURANIC</h1>
-            <p className="text-muted-foreground text-gray-400">Discover your digital aura & rizz</p>
-          </div>
-          
-          <Card className="border-2 border-purple-600/80 bg-gradient-to-br from-black via-purple-950/20 to-black/95 backdrop-blur-lg text-white shadow-[0_0_15px_rgba(147,51,234,0.3)] rounded-xl overflow-hidden">
-            <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxkZWZzPjxwYXR0ZXJuIGlkPSJncmlkIiB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHBhdHRlcm5Vbml0cz0idXNlclNwYWNlT25Vc2UiPjxwYXRoIGQ9Ik0gMjAgMCBMIDAgMCAwIDIwIiBmaWxsPSJub25lIiBzdHJva2U9InJnYmEoMTM4LCA0MywgMjI2LCAwLjEpIiBzdHJva2Utd2lkdGg9IjEiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JpZCkiLz48L3N2Zz4=')]"></div>
-            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-600/0 via-purple-600 to-purple-600/0"></div>
+    <div className="min-h-screen flex flex-col md:flex-row bg-[#0a0a0a] overflow-hidden">
+      {/* Animated background effect */}
+      <motion.div 
+        className="absolute inset-0 w-full h-full opacity-50 pointer-events-none"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 0.5 }}
+        transition={{ duration: 1.5 }}
+        style={{
+          background: "radial-gradient(circle at center, rgba(176, 38, 255, 0.15) 0%, rgba(0, 0, 0, 0) 70%)",
+        }}
+      />
+
+      {/* Grid lines */}
+      <div className="absolute inset-0 w-full h-full z-0 pointer-events-none opacity-20"
+        style={{
+          backgroundImage: `
+            linear-gradient(to right, rgba(0, 238, 255, 0.1) 1px, transparent 1px),
+            linear-gradient(to bottom, rgba(0, 238, 255, 0.1) 1px, transparent 1px)
+          `,
+          backgroundSize: '40px 40px',
+        }}
+      />
+
+      {/* Authentication Section */}
+      <div className="w-full md:w-1/2 flex justify-center items-center p-6 md:p-12 relative z-10">
+        <motion.div 
+          className="w-full max-w-md"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          {/* Auth Card */}
+          <div className="w-full rounded-xl overflow-hidden backdrop-blur-md border-2 border-[#b026ff] shadow-2xl relative">
+            {/* Card header with tab navigation */}
+            <div className="relative bg-black/60 p-6 flex flex-col items-center">
+              {/* Glowing logo */}
+              <motion.div 
+                className="w-16 h-16 flex items-center justify-center mb-6 rounded-full bg-gradient-to-br from-[#b026ff] to-[#0ef] shadow-lg"
+                animate={{
+                  boxShadow: [
+                    "0 0 10px rgba(176, 38, 255, 0.7)",
+                    "0 0 20px rgba(176, 38, 255, 0.7)",
+                    "0 0 10px rgba(176, 38, 255, 0.7)"
+                  ]
+                }}
+                transition={{ 
+                  duration: 2,
+                  repeat: Infinity,
+                  repeatType: "reverse"
+                }}
+              >
+                <HiOutlineSparkles className="text-white text-2xl" />
+              </motion.div>
+              
+              <h1 className="text-2xl md:text-3xl font-bold text-white mb-2 font-['Orbitron']">AURANIC</h1>
+              <p className="text-[#0ef] mb-4 text-sm tracking-wide">Digital Vibe Analyzer</p>
+              
+              {/* Tab Navigation */}
+              <div className="grid grid-cols-2 gap-2 w-full">
+                <button 
+                  onClick={() => setActiveTab("login")}
+                  className={`py-3 text-center transition-all font-['Orbitron'] text-sm ${
+                    activeTab === "login" 
+                      ? "bg-gradient-to-r from-[#b026ff] to-[#0ef] text-white rounded-t-lg font-bold" 
+                      : "text-gray-400 hover:text-white"
+                  }`}
+                >
+                  LOGIN
+                </button>
+                <button 
+                  onClick={() => setActiveTab("register")}
+                  className={`py-3 text-center transition-all font-['Orbitron'] text-sm ${
+                    activeTab === "register" 
+                      ? "bg-gradient-to-r from-[#0ef] to-[#b026ff] text-white rounded-t-lg font-bold" 
+                      : "text-gray-400 hover:text-white"
+                  }`}
+                >
+                  REGISTER
+                </button>
+              </div>
+            </div>
             
-            <CardHeader className="relative">
-              <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "login" | "register")}>
-                <TabsList className="grid w-full grid-cols-2 bg-black/60 border border-purple-500/50 rounded-lg overflow-hidden">
-                  <TabsTrigger 
-                    value="login" 
-                    className="data-[state=active]:bg-gradient-to-b data-[state=active]:from-purple-600/50 data-[state=active]:to-purple-900/30 data-[state=active]:text-white text-gray-400 py-3 transition-all duration-300"
-                  >
-                    Login
-                  </TabsTrigger>
-                  <TabsTrigger 
-                    value="register" 
-                    className="data-[state=active]:bg-gradient-to-b data-[state=active]:from-purple-600/50 data-[state=active]:to-purple-900/30 data-[state=active]:text-white text-gray-400 py-3 transition-all duration-300"
-                  >
-                    Register
-                  </TabsTrigger>
-                </TabsList>
-                
-                <TabsContent value="login" className="mt-4">
-                  <CardTitle className="text-transparent bg-clip-text bg-gradient-to-r from-purple-300 to-pink-300 text-2xl font-bold tracking-wide">
-                    Access Your Digital Aura
-                  </CardTitle>
-                  <CardDescription className="text-purple-200/70">
-                    Enter your credentials to continue your mystical journey
-                  </CardDescription>
-                </TabsContent>
-                
-                <TabsContent value="register" className="mt-4">
-                  <CardTitle className="text-transparent bg-clip-text bg-gradient-to-r from-purple-300 to-pink-300 text-2xl font-bold tracking-wide">
-                    Create Your Energy Profile
-                  </CardTitle>
-                  <CardDescription className="text-purple-200/70">
-                    Join the AURANIC community to discover hidden vibes
-                  </CardDescription>
-                </TabsContent>
-              </Tabs>
-            </CardHeader>
+            {/* Scanner line effect */}
+            <motion.div 
+              className="h-1 bg-gradient-to-r from-transparent via-[#0ef] to-transparent"
+              variants={scannerAnimation}
+              initial="initial"
+              animate="animate"
+            ></motion.div>
             
-            <CardContent>
-              {activeTab === "login" ? (
+            {/* Form Body */}
+            <div className="bg-black/40 backdrop-blur-sm p-6 md:p-8">
+              {/* Login Form */}
+              {activeTab === "login" && (
                 <Form {...loginForm}>
-                  <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
+                  <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-6">
                     <FormField
                       control={loginForm.control}
                       name="username"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-purple-300 font-medium">Username</FormLabel>
-                          <FormControl>
-                            <div className="relative group">
-                              <Input 
-                                placeholder="Enter your username" 
-                                {...field} 
-                                className="bg-black/40 border-purple-600/50 focus:border-purple-400 border-2 rounded-lg py-6 pl-4 pr-10 font-medium text-white/90 placeholder:text-gray-500 placeholder:font-normal transition-all duration-300 focus-visible:ring-1 focus-visible:ring-offset-1 ring-offset-purple-800 focus-visible:ring-purple-400" 
-                              />
-                              <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-purple-600/20 to-pink-600/20 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-300"></div>
-                              <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-purple-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                                @
-                              </div>
+                          <div className="relative">
+                            <FormLabel className="text-sm text-[#0ef] font-['Orbitron'] absolute -top-2 left-2 px-1 bg-black z-10">USERNAME</FormLabel>
+                            <div className="relative mt-1">
+                              <span className="absolute left-3 top-3 text-gray-500">
+                                <FaUserAstronaut />
+                              </span>
+                              <FormControl>
+                                <Input 
+                                  placeholder="Enter your username" 
+                                  {...field} 
+                                  className="pl-10 bg-black/60 border-[#b026ff]/50 focus:border-[#0ef] h-12 text-white rounded-lg"
+                                />
+                              </FormControl>
                             </div>
-                          </FormControl>
-                          <FormMessage className="text-pink-400" />
+                          </div>
+                          <FormMessage className="text-[#ff2d95] mt-1 text-xs" />
                         </FormItem>
                       )}
                     />
@@ -155,22 +219,30 @@ export default function AuthPage() {
                       name="password"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-purple-300 font-medium">Password</FormLabel>
-                          <FormControl>
-                            <div className="relative group">
-                              <Input 
-                                type="password" 
-                                placeholder="Enter your password" 
-                                {...field} 
-                                className="bg-black/40 border-purple-600/50 focus:border-purple-400 border-2 rounded-lg py-6 pl-4 pr-10 font-medium text-white/90 placeholder:text-gray-500 placeholder:font-normal transition-all duration-300 focus-visible:ring-1 focus-visible:ring-offset-1 ring-offset-purple-800 focus-visible:ring-purple-400" 
-                              />
-                              <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-purple-600/20 to-pink-600/20 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-300"></div>
-                              <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-purple-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                                🔒
-                              </div>
+                          <div className="relative">
+                            <FormLabel className="text-sm text-[#0ef] font-['Orbitron'] absolute -top-2 left-2 px-1 bg-black z-10">PASSWORD</FormLabel>
+                            <div className="relative mt-1">
+                              <span className="absolute left-3 top-3 text-gray-500">
+                                <FaLock />
+                              </span>
+                              <FormControl>
+                                <Input 
+                                  type={showPassword ? "text" : "password"}
+                                  placeholder="Enter your password" 
+                                  {...field} 
+                                  className="pl-10 pr-10 bg-black/60 border-[#b026ff]/50 focus:border-[#0ef] h-12 text-white rounded-lg"
+                                />
+                              </FormControl>
+                              <button 
+                                type="button"
+                                onClick={togglePasswordVisibility}
+                                className="absolute right-3 top-3 text-gray-500 hover:text-[#0ef]"
+                              >
+                                {showPassword ? <FaRegEyeSlash /> : <FaRegEye />}
+                              </button>
                             </div>
-                          </FormControl>
-                          <FormMessage className="text-pink-400" />
+                          </div>
+                          <FormMessage className="text-[#ff2d95] mt-1 text-xs" />
                         </FormItem>
                       )}
                     />
@@ -178,48 +250,52 @@ export default function AuthPage() {
                     <Button 
                       type="submit" 
                       disabled={loginMutation.isPending} 
-                      className="w-full relative py-6 overflow-hidden group bg-gradient-to-br from-purple-600 to-indigo-700 hover:from-purple-500 hover:to-indigo-600 text-white font-medium rounded-lg text-lg shadow-lg shadow-purple-500/30 transition-all duration-300"
+                      className="w-full relative py-6 overflow-hidden group bg-gradient-to-br from-[#0ef] to-[#b026ff] hover:from-[#0ef]/80 hover:to-[#b026ff]/80 text-white font-medium rounded-lg text-lg shadow-lg shadow-[#0ef]/30 transition-all duration-300"
                     >
                       <span className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 group-hover:translate-x-full transition-all duration-1000 ease-in-out"></span>
                       <span className="relative flex items-center justify-center">
                         {loginMutation.isPending ? (
                           <>
                             <Loader2 className="mr-2 h-5 w-5 animate-spin" /> 
-                            <span className="animate-pulse">Accessing Mystic Portal...</span>
+                            <span className="animate-pulse">Syncing Energy Grid...</span>
                           </>
                         ) : (
                           <>
                             <span className="mr-2">✨</span>
-                            <span>Enter the Vibe</span>
+                            <span>Enter the Vibeverse</span>
                           </>
                         )}
                       </span>
                     </Button>
                   </form>
                 </Form>
-              ) : (
+              )}
+              
+              {/* Register Form */}
+              {activeTab === "register" && (
                 <Form {...registerForm}>
-                  <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-4">
+                  <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-6">
                     <FormField
                       control={registerForm.control}
                       name="username"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-purple-300 font-medium">Username</FormLabel>
-                          <FormControl>
-                            <div className="relative group">
-                              <Input 
-                                placeholder="Choose a username" 
-                                {...field} 
-                                className="bg-black/40 border-purple-600/50 focus:border-purple-400 border-2 rounded-lg py-6 pl-4 pr-10 font-medium text-white/90 placeholder:text-gray-500 placeholder:font-normal transition-all duration-300 focus-visible:ring-1 focus-visible:ring-offset-1 ring-offset-purple-800 focus-visible:ring-purple-400" 
-                              />
-                              <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-purple-600/20 to-pink-600/20 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-300"></div>
-                              <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-purple-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                                @
-                              </div>
+                          <div className="relative">
+                            <FormLabel className="text-sm text-[#0ef] font-['Orbitron'] absolute -top-2 left-2 px-1 bg-black z-10">USERNAME</FormLabel>
+                            <div className="relative mt-1">
+                              <span className="absolute left-3 top-3 text-gray-500">
+                                <FaUserAstronaut />
+                              </span>
+                              <FormControl>
+                                <Input 
+                                  placeholder="Choose your digital identity" 
+                                  {...field} 
+                                  className="pl-10 bg-black/60 border-[#b026ff]/50 focus:border-[#0ef] h-12 text-white rounded-lg"
+                                />
+                              </FormControl>
                             </div>
-                          </FormControl>
-                          <FormMessage className="text-pink-400" />
+                          </div>
+                          <FormMessage className="text-[#ff2d95] mt-1 text-xs" />
                         </FormItem>
                       )}
                     />
@@ -229,22 +305,23 @@ export default function AuthPage() {
                       name="email"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-purple-300 font-medium">Email</FormLabel>
-                          <FormControl>
-                            <div className="relative group">
-                              <Input 
-                                type="email" 
-                                placeholder="Enter your email" 
-                                {...field} 
-                                className="bg-black/40 border-purple-600/50 focus:border-purple-400 border-2 rounded-lg py-6 pl-4 pr-10 font-medium text-white/90 placeholder:text-gray-500 placeholder:font-normal transition-all duration-300 focus-visible:ring-1 focus-visible:ring-offset-1 ring-offset-purple-800 focus-visible:ring-purple-400" 
-                              />
-                              <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-purple-600/20 to-pink-600/20 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-300"></div>
-                              <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-purple-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                                ✉️
-                              </div>
+                          <div className="relative">
+                            <FormLabel className="text-sm text-[#0ef] font-['Orbitron'] absolute -top-2 left-2 px-1 bg-black z-10">EMAIL</FormLabel>
+                            <div className="relative mt-1">
+                              <span className="absolute left-3 top-3 text-gray-500">
+                                <FaEnvelope />
+                              </span>
+                              <FormControl>
+                                <Input 
+                                  type="email"
+                                  placeholder="Your cosmic email address" 
+                                  {...field} 
+                                  className="pl-10 bg-black/60 border-[#b026ff]/50 focus:border-[#0ef] h-12 text-white rounded-lg"
+                                />
+                              </FormControl>
                             </div>
-                          </FormControl>
-                          <FormMessage className="text-pink-400" />
+                          </div>
+                          <FormMessage className="text-[#ff2d95] mt-1 text-xs" />
                         </FormItem>
                       )}
                     />
@@ -254,22 +331,30 @@ export default function AuthPage() {
                       name="password"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-purple-300 font-medium">Password</FormLabel>
-                          <FormControl>
-                            <div className="relative group">
-                              <Input 
-                                type="password" 
-                                placeholder="Create a password" 
-                                {...field} 
-                                className="bg-black/40 border-purple-600/50 focus:border-purple-400 border-2 rounded-lg py-6 pl-4 pr-10 font-medium text-white/90 placeholder:text-gray-500 placeholder:font-normal transition-all duration-300 focus-visible:ring-1 focus-visible:ring-offset-1 ring-offset-purple-800 focus-visible:ring-purple-400" 
-                              />
-                              <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-purple-600/20 to-pink-600/20 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-300"></div>
-                              <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-purple-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                                🔒
-                              </div>
+                          <div className="relative">
+                            <FormLabel className="text-sm text-[#0ef] font-['Orbitron'] absolute -top-2 left-2 px-1 bg-black z-10">PASSWORD</FormLabel>
+                            <div className="relative mt-1">
+                              <span className="absolute left-3 top-3 text-gray-500">
+                                <FaLock />
+                              </span>
+                              <FormControl>
+                                <Input 
+                                  type={showPassword ? "text" : "password"}
+                                  placeholder="Create your secure passkey" 
+                                  {...field} 
+                                  className="pl-10 pr-10 bg-black/60 border-[#b026ff]/50 focus:border-[#0ef] h-12 text-white rounded-lg"
+                                />
+                              </FormControl>
+                              <button 
+                                type="button"
+                                onClick={togglePasswordVisibility}
+                                className="absolute right-3 top-3 text-gray-500 hover:text-[#0ef]"
+                              >
+                                {showPassword ? <FaRegEyeSlash /> : <FaRegEye />}
+                              </button>
                             </div>
-                          </FormControl>
-                          <FormMessage className="text-pink-400" />
+                          </div>
+                          <FormMessage className="text-[#ff2d95] mt-1 text-xs" />
                         </FormItem>
                       )}
                     />
@@ -279,22 +364,30 @@ export default function AuthPage() {
                       name="confirmPassword"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-purple-300 font-medium">Confirm Password</FormLabel>
-                          <FormControl>
-                            <div className="relative group">
-                              <Input 
-                                type="password" 
-                                placeholder="Confirm your password" 
-                                {...field} 
-                                className="bg-black/40 border-purple-600/50 focus:border-purple-400 border-2 rounded-lg py-6 pl-4 pr-10 font-medium text-white/90 placeholder:text-gray-500 placeholder:font-normal transition-all duration-300 focus-visible:ring-1 focus-visible:ring-offset-1 ring-offset-purple-800 focus-visible:ring-purple-400" 
-                              />
-                              <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-purple-600/20 to-pink-600/20 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-300"></div>
-                              <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-purple-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                                ✅
-                              </div>
+                          <div className="relative">
+                            <FormLabel className="text-sm text-[#0ef] font-['Orbitron'] absolute -top-2 left-2 px-1 bg-black z-10">CONFIRM</FormLabel>
+                            <div className="relative mt-1">
+                              <span className="absolute left-3 top-3 text-gray-500">
+                                <FaLock />
+                              </span>
+                              <FormControl>
+                                <Input 
+                                  type={showConfirmPassword ? "text" : "password"}
+                                  placeholder="Reconfirm your passkey" 
+                                  {...field} 
+                                  className="pl-10 pr-10 bg-black/60 border-[#b026ff]/50 focus:border-[#0ef] h-12 text-white rounded-lg"
+                                />
+                              </FormControl>
+                              <button 
+                                type="button"
+                                onClick={toggleConfirmPasswordVisibility}
+                                className="absolute right-3 top-3 text-gray-500 hover:text-[#0ef]"
+                              >
+                                {showConfirmPassword ? <FaRegEyeSlash /> : <FaRegEye />}
+                              </button>
                             </div>
-                          </FormControl>
-                          <FormMessage className="text-pink-400" />
+                          </div>
+                          <FormMessage className="text-[#ff2d95] mt-1 text-xs" />
                         </FormItem>
                       )}
                     />
@@ -322,45 +415,75 @@ export default function AuthPage() {
                   </form>
                 </Form>
               )}
-            </CardContent>
-            
-            <CardFooter className="flex justify-center">
-              <Button 
-                variant="link" 
-                onClick={() => {
-                  setActiveTab(activeTab === "login" ? "register" : "login");
-                }}
-                className="text-purple-400"
-              >
-                {activeTab === "login" ? "Need an account? Register" : "Already have an account? Login"}
-              </Button>
-            </CardFooter>
-          </Card>
-        </div>
-      </div>
-      
-      {/* Hero Image Section */}
-      <div 
-        className="w-full md:w-1/2 bg-cover bg-center min-h-[400px] md:min-h-screen relative overflow-hidden"
-        style={{ backgroundImage: `url(${glitchBg})` }}
-      >
-        <div className="absolute inset-0 bg-gradient-to-b from-black/70 to-black/30 flex flex-col justify-center items-center p-8 text-center">
-          <h2 className="text-5xl md:text-7xl font-bold mb-4 text-white tracking-wide">
-            Discover Your <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-600">Mystical</span> Essence
-          </h2>
-          <p className="text-xl md:text-2xl text-gray-200 max-w-lg mb-6">
-            AURANIC reveals the hidden energy signature of faces, portraits, and Ghibli characters through advanced aura reading.
-          </p>
-          <div className="grid grid-cols-2 gap-4 max-w-md w-full">
-            <div className="bg-black/60 backdrop-blur-sm p-4 rounded-lg border border-purple-700">
-              <h3 className="text-xl font-bold text-purple-400">Aura Score</h3>
-              <p className="text-gray-300">Reveals your inner spirit energy and emotional resonance</p>
-            </div>
-            <div className="bg-black/60 backdrop-blur-sm p-4 rounded-lg border border-pink-700">
-              <h3 className="text-xl font-bold text-pink-400">Rizz Score</h3>
-              <p className="text-gray-300">Measures your charisma, allure and social magnetic presence</p>
+              
+              {/* Switch between login/register */}
+              <div className="mt-6 text-center">
+                <button 
+                  onClick={() => setActiveTab(activeTab === "login" ? "register" : "login")}
+                  className="text-sm text-[#0ef]/80 hover:text-[#0ef] transition-colors"
+                >
+                  {activeTab === "login" ? "Need an account? Join the vibe realm" : "Already have an account? Sign in"}
+                </button>
+              </div>
             </div>
           </div>
+        </motion.div>
+      </div>
+      
+      {/* Hero Section */}
+      <div className="w-full md:w-1/2 relative overflow-hidden hidden md:block">
+        {/* Background image with overlay */}
+        <div 
+          className={`absolute inset-0 bg-cover bg-center transition-opacity duration-1000 ${bgImageLoaded ? 'opacity-100' : 'opacity-0'}`}
+          style={{ backgroundImage: `url(${glitchBg})` }}
+        />
+        
+        {/* Gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-r from-[#000] via-transparent to-transparent"></div>
+        
+        {/* Content */}
+        <div className="absolute inset-0 flex flex-col justify-center items-start p-12 z-10">
+          <motion.h2 
+            className="text-5xl md:text-6xl font-bold mb-6 text-white leading-tight max-w-lg"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.3 }}
+          >
+            Discover Your <motion.span 
+              className="text-transparent bg-clip-text bg-gradient-to-r from-[#0ef] to-[#ff2d95]"
+              variants={glitchText}
+              initial="initial"
+              animate="animate"
+            >
+              Digital Aura
+            </motion.span>
+          </motion.h2>
+          
+          <motion.p 
+            className="text-xl text-gray-300 mb-8 max-w-lg"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.5 }}
+          >
+            AURANIC reveals the hidden energy signatures in your digital world through advanced AI vibe analysis.
+          </motion.p>
+          
+          {/* Feature badges */}
+          <motion.div 
+            className="grid grid-cols-2 gap-5 w-full max-w-lg"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.7 }}
+          >
+            <div className="bg-black/60 backdrop-blur-md p-4 rounded-lg border border-[#b026ff]/40 shadow-lg">
+              <h3 className="text-xl font-bold text-[#0ef] mb-2">Aura Score</h3>
+              <p className="text-gray-400">Reveals your inner energy and emotional resonance</p>
+            </div>
+            <div className="bg-black/60 backdrop-blur-md p-4 rounded-lg border border-[#ff2d95]/40 shadow-lg">
+              <h3 className="text-xl font-bold text-[#ff2d95] mb-2">Rizz Score</h3>
+              <p className="text-gray-400">Measures your charisma, allure and magnetic presence</p>
+            </div>
+          </motion.div>
         </div>
       </div>
     </div>
