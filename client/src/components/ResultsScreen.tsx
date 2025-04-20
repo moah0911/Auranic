@@ -1,18 +1,20 @@
 import { useRef } from 'react';
 import { motion } from 'framer-motion';
-import { FaShareAlt, FaRedoAlt } from 'react-icons/fa';
+import { FaShareAlt, FaRedoAlt, FaCamera, FaMusic } from 'react-icons/fa';
 import { AnalysisResult } from '@/lib/types';
 import html2canvas from 'html2canvas';
 import { useToast } from '@/hooks/use-toast';
 
+// Extended interface to handle song data
 interface ResultsScreenProps {
-  result: AnalysisResult;
+  result: AnalysisResult & { songName?: string };
   onScanAgain: () => void;
 }
 
 export default function ResultsScreen({ result, onScanAgain }: ResultsScreenProps) {
   const resultCardRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+  const isSongAnalysis = 'songName' in result && Boolean(result.songName);
 
   const glitchAnimation = {
     animate: {
@@ -26,7 +28,7 @@ export default function ResultsScreen({ result, onScanAgain }: ResultsScreenProp
       transition: {
         duration: 0.5,
         repeat: Infinity,
-        repeatType: 'reverse',
+        repeatType: "reverse" as const,
         times: [0, 0.34, 0.36, 0.38, 0.64, 0.66, 0.68]
       }
     }
@@ -103,13 +105,34 @@ export default function ResultsScreen({ result, onScanAgain }: ResultsScreenProp
     <div className="w-full max-w-md">
       <motion.div 
         ref={resultCardRef}
-        className="border-2 border-[#ff2d95] rounded-lg p-8 bg-[#121212]/70 shadow-lg relative overflow-hidden"
+        className={`border-2 ${isSongAnalysis ? 'border-[#ff2d95]' : 'border-[#b026ff]'} rounded-lg p-8 bg-[#121212]/70 shadow-lg relative overflow-hidden`}
         variants={pulseAnimation}
         initial="initial"
         animate="animate"
       >
-        <h2 className="font-['Press_Start_2P'] text-lg text-center mb-2 text-white">VIBE ANALYSIS</h2>
-        <p className="text-center font-['Orbitron'] text-sm text-[#0ef] mb-6">Your Digital Essence</p>
+        {/* Type indicator */}
+        <div className="absolute top-4 right-4">
+          {isSongAnalysis ? (
+            <FaMusic className="text-[#ff2d95] text-2xl" />
+          ) : (
+            <FaCamera className="text-[#b026ff] text-2xl" />
+          )}
+        </div>
+
+        <h2 className="font-['Press_Start_2P'] text-lg text-center mb-2 text-white">
+          {isSongAnalysis ? 'SONIC VIBRATION' : 'AURA ANALYSIS'}
+        </h2>
+        <p className="text-center font-['Orbitron'] text-sm text-[#0ef] mb-3">
+          {isSongAnalysis ? "Music Energy Reading" : "Personal Aura Scan"}
+        </p>
+        
+        {/* Song name if available */}
+        {isSongAnalysis && result.songName && (
+          <div className="text-center mb-4 py-1 px-2 bg-[#1a1a1a]/70 rounded-lg">
+            <span className="text-xs text-gray-400 uppercase block">Track</span>
+            <span className="text-sm font-bold text-white">"{result.songName}"</span>
+          </div>
+        )}
         
         {/* Mystic title */}
         <div className="text-center mb-6">
@@ -186,14 +209,14 @@ export default function ResultsScreen({ result, onScanAgain }: ResultsScreenProp
             onClick={onScanAgain}
           >
             <FaRedoAlt className="mr-2" />
-            SCAN AGAIN
+            TRY AGAIN
           </motion.button>
         </div>
       </motion.div>
       
-      {/* Example footer */}
+      {/* Footer */}
       <div className="mt-6 text-center text-xs text-gray-500">
-        <p>"You got read. Then it vanished."</p>
+        <p>"{isSongAnalysis ? 'Sonic waves decoded' : 'Aura revealed'}. The mystical vision vanishes soon."</p>
       </div>
     </div>
   );

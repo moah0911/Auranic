@@ -1,5 +1,6 @@
 import { Pool, neonConfig } from '@neondatabase/serverless';
 import { drizzle } from 'drizzle-orm/neon-serverless';
+import { migrate } from 'drizzle-orm/neon-serverless/migrator';
 import ws from "ws";
 import * as schema from "@shared/schema";
 import { createClient } from '@supabase/supabase-js';
@@ -33,8 +34,46 @@ export const supabase = createClient(
 export async function syncSchema() {
   try {
     console.log("Syncing database schema...");
-    // This is normally done with drizzle-kit, but we can also do it manually
-    // by executing "npm run db:push" in package.json scripts
+    
+    // Create tables directly with SQL since we don't have drizzle migrations set up
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        uuid UUID DEFAULT gen_random_uuid() NOT NULL UNIQUE,
+        email TEXT NOT NULL UNIQUE,
+        username TEXT NOT NULL UNIQUE,
+        password TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT NOW() NOT NULL
+      );
+      
+      CREATE TABLE IF NOT EXISTS image_analyses (
+        id SERIAL PRIMARY KEY,
+        image_id TEXT NOT NULL UNIQUE,
+        user_id INTEGER REFERENCES users(id),
+        aura_score INTEGER NOT NULL,
+        rizz_score INTEGER NOT NULL,
+        mystic_title TEXT NOT NULL,
+        analysis_text TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT NOW() NOT NULL,
+        is_public BOOLEAN DEFAULT FALSE NOT NULL,
+        content_type TEXT DEFAULT 'image' NOT NULL
+      );
+      
+      CREATE TABLE IF NOT EXISTS song_analyses (
+        id SERIAL PRIMARY KEY,
+        song_id TEXT NOT NULL UNIQUE,
+        song_name TEXT NOT NULL,
+        user_id INTEGER REFERENCES users(id),
+        aura_score INTEGER NOT NULL,
+        rizz_score INTEGER NOT NULL,
+        mystic_title TEXT NOT NULL,
+        analysis_text TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT NOW() NOT NULL,
+        is_public BOOLEAN DEFAULT FALSE NOT NULL,
+        content_type TEXT DEFAULT 'song' NOT NULL
+      );
+    `);
+    
     console.log("Schema sync complete!");
   } catch (error) {
     console.error("Error syncing database schema:", error);
