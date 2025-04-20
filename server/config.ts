@@ -37,10 +37,16 @@ export const AI_CONFIG = {
 
 // Session configuration
 export const SESSION_CONFIG = {
-  secret: process.env.SESSION_SECRET || 'auranic-session-secret',
+  secret: process.env.SESSION_SECRET || generateSessionSecret(),
   cookieName: 'auranic_session',
   cookieMaxAge: 24 * 60 * 60 * 1000, // 24 hours
 };
+
+// Generate a secure session secret if one is not provided
+function generateSessionSecret(): string {
+  const crypto = require('crypto');
+  return `auranic-${crypto.randomBytes(32).toString('hex')}-${Date.now()}`;
+}
 
 // Server configuration
 export const SERVER_CONFIG = {
@@ -51,17 +57,30 @@ export const SERVER_CONFIG = {
 // Helper function to validate required configuration
 export function validateConfig() {
   const missingVars = [];
+  const warnings = [];
 
-  if (!DATABASE_CONFIG.url) missingVars.push('DATABASE_URL');
-  
+  // Critical variables
   if (!SUPABASE_CONFIG.url) missingVars.push('SUPABASE_URL');
   if (!SUPABASE_CONFIG.anonKey) missingVars.push('SUPABASE_ANON_KEY');
-  
-  if (!AI_CONFIG.openai.apiKey) missingVars.push('OPENAI_API_KEY');
-  if (!AI_CONFIG.gemini.apiKey) missingVars.push('GEMINI_API_KEY');
-  
+
+  // Important but not critical
+  if (!AI_CONFIG.openai.apiKey) warnings.push('OPENAI_API_KEY');
+  if (!AI_CONFIG.gemini.apiKey) warnings.push('GEMINI_API_KEY');
+
+  // Legacy variables
+  if (!DATABASE_CONFIG.url) {
+    console.info('DATABASE_URL not set. Using Supabase for all database operations.');
+  }
+
+  // Report critical missing variables
   if (missingVars.length > 0) {
-    console.warn(`⚠️ Missing environment variables: ${missingVars.join(', ')}`);
+    console.error(`❌ Critical environment variables missing: ${missingVars.join(', ')}`);
+    console.error('Application will not function correctly without these variables.');
+  }
+
+  // Report warnings
+  if (warnings.length > 0) {
+    console.warn(`⚠️ Some environment variables missing: ${warnings.join(', ')}`);
     console.warn('Some functionality may be limited or unavailable.');
   }
 }

@@ -12,20 +12,23 @@ validateConfig();
 neonConfig.webSocketConstructor = ws;
 
 // Check for required environment variables
-if (!DATABASE_CONFIG.url) {
+if (!SUPABASE_CONFIG.url || !SUPABASE_CONFIG.anonKey) {
   throw new Error(
-    "DATABASE_URL must be set. Did you forget to provision a database?",
+    "SUPABASE_URL and SUPABASE_ANON_KEY must be set. Supabase is required for database and authentication."
   );
 }
 
-if (!SUPABASE_CONFIG.url || !SUPABASE_CONFIG.anonKey) {
+// For backward compatibility, check if direct database URL is also set
+if (!DATABASE_CONFIG.url) {
   console.warn(
-    "SUPABASE_URL and/or SUPABASE_ANON_KEY not set. Supabase authentication will not work."
+    "DATABASE_URL not set. Using Supabase for all database operations."
   );
 }
 
 // Set up database connection for Drizzle ORM
-export const pool = new Pool({ connectionString: DATABASE_CONFIG.url });
+// If DATABASE_URL is not set, use Supabase URL with REST API path
+const connectionString = DATABASE_CONFIG.url || `${SUPABASE_CONFIG.url}/rest/v1`;
+export const pool = new Pool({ connectionString });
 export const db = drizzle({ client: pool, schema });
 
 // Initialize Supabase client for auth
@@ -38,7 +41,7 @@ export const supabase = createClient(
 export async function syncSchema() {
   try {
     console.log("Syncing database schema...");
-    
+
     // Create tables directly with SQL since we don't have drizzle migrations set up
     await pool.query(`
       CREATE TABLE IF NOT EXISTS users (
@@ -49,7 +52,7 @@ export async function syncSchema() {
         password TEXT NOT NULL,
         created_at TIMESTAMP DEFAULT NOW() NOT NULL
       );
-      
+
       CREATE TABLE IF NOT EXISTS image_analyses (
         id SERIAL PRIMARY KEY,
         image_id TEXT NOT NULL UNIQUE,
@@ -62,7 +65,7 @@ export async function syncSchema() {
         is_public BOOLEAN DEFAULT FALSE NOT NULL,
         content_type TEXT DEFAULT 'image' NOT NULL
       );
-      
+
       CREATE TABLE IF NOT EXISTS song_analyses (
         id SERIAL PRIMARY KEY,
         song_id TEXT NOT NULL UNIQUE,
@@ -77,7 +80,7 @@ export async function syncSchema() {
         content_type TEXT DEFAULT 'song' NOT NULL
       );
     `);
-    
+
     console.log("Schema sync complete!");
   } catch (error) {
     console.error("Error syncing database schema:", error);

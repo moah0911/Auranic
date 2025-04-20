@@ -4,7 +4,7 @@ import { Express } from "express";
 import session from "express-session";
 import { storage } from "./storage";
 import { User as SelectUser } from "@shared/schema";
-import { randomBytes } from "crypto";
+import { SESSION_CONFIG } from "./config";
 
 // Typescript declaration for Express.User
 declare global {
@@ -13,8 +13,8 @@ declare global {
   }
 }
 
-// Configure session secret
-const SESSION_SECRET = process.env.SESSION_SECRET || randomBytes(32).toString('hex');
+// Use session configuration from config.ts
+const SESSION_SECRET = SESSION_CONFIG.secret;
 
 export function setupAuth(app: Express) {
   // Configure session
@@ -84,7 +84,7 @@ export function setupAuth(app: Express) {
       // Log the user in
       req.login(user, (err) => {
         if (err) return next(err);
-        
+
         // Send user without password
         const { password, ...userWithoutPassword } = user;
         res.status(201).json(userWithoutPassword);
@@ -101,10 +101,10 @@ export function setupAuth(app: Express) {
       if (!user) {
         return res.status(401).json({ message: info?.message || "Invalid credentials" });
       }
-      
+
       req.login(user, (err) => {
         if (err) return next(err);
-        
+
         // Send user without password
         const { password, ...userWithoutPassword } = user;
         res.json(userWithoutPassword);
@@ -123,7 +123,7 @@ export function setupAuth(app: Express) {
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "Not authenticated" });
     }
-    
+
     // Send user without password
     const { password, ...userWithoutPassword } = req.user;
     res.json(userWithoutPassword);
