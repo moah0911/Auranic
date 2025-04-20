@@ -59,12 +59,49 @@ DATABASE_URL="postgresql://postgres:[YOUR-PASSWORD]@db.[YOUR-PROJECT-REF].supaba
 
 ### Troubleshooting Connection Issues
 
-If you encounter network errors (like ENETUNREACH):
+#### Network Errors (ENETUNREACH)
 
-1. Try the direct connection format with connection pooling first
+If you encounter network connectivity errors:
+
+1. Try the standard connection format instead of connection pooling
 2. Make sure your hosting provider allows outbound connections to Supabase
 3. Check if there are any firewall rules blocking the connection
-4. Verify that your database password doesn't contain special characters that need URL encoding
+
+#### Authentication Errors (SASL, SCRAM)
+
+If you encounter SASL authentication errors:
+
+1. Make sure your password is correctly URL encoded:
+   - Replace `@` with `%40`
+   - Replace `#` with `%23`
+   - Replace `$` with `%24`
+   - Replace spaces with `%20`
+
+2. Try the standard connection format:
+   ```
+   DATABASE_URL="postgresql://postgres:YourPassword@db.your-project-ref.supabase.co:5432/postgres"
+   ```
+
+3. Remove any square brackets or other special formatting from your password
+
+#### Password Issues
+
+If your password contains special characters:
+
+1. Generate a new safe password with our helper script:
+   ```bash
+   npm run generate:password
+   ```
+
+2. Update your Supabase database password with this new password
+
+3. Update your DATABASE_URL in .env with the new password
+
+4. If you must use special characters, make sure to properly URL encode them:
+   - Replace `@` with `%40`
+   - Replace `#` with `%23`
+   - Replace `$` with `%24`
+   - Replace spaces with `%20`
 
 If `DATABASE_URL` is not provided, the application will run in a limited mode where database operations will fail. This is fine for development and testing the UI, but not suitable for production use.
 
@@ -73,7 +110,18 @@ If `DATABASE_URL` is not provided, the application will run in a limited mode wh
 1. Clone the repository
 2. Create a `.env` file with the required environment variables
 3. Install dependencies: `npm install`
-4. Start the development server: `npm run dev`
+4. Test your database connection: `npm run test:db`
+5. Start the development server: `npm run dev`
+
+### Testing Database Connection
+
+Before starting the application, you can test your database connection with:
+
+```bash
+npm run test:db
+```
+
+This will attempt to connect to your database and provide detailed error messages if the connection fails. Use this to troubleshoot connection issues before deploying the application.
 
 ## Features
 

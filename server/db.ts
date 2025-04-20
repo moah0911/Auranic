@@ -47,6 +47,17 @@ if (!connectionString) {
   try {
     const connUrl = new URL(connectionString);
     console.log(`Connecting to database at ${connUrl.host} with user ${connUrl.username}`);
+
+    // Check for common issues in the connection string
+    if (connUrl.password.includes('@')) {
+      console.warn('Warning: Your database password contains @ character which may cause issues.');
+      console.warn('Make sure it is properly URL encoded (@ should be %40).');
+    }
+
+    if (connUrl.password.includes('[') || connUrl.password.includes(']')) {
+      console.warn('Warning: Your database password contains square brackets which should be removed.');
+      console.warn('These are likely placeholder markers and not part of the actual password.');
+    }
   } catch (e) {
     console.warn('Invalid database connection string format:', e);
   }
@@ -134,6 +145,16 @@ export async function syncSchema() {
       } else if (errorStr.includes('no pg_hba.conf entry')) {
         console.error("ACCESS ERROR: Your IP address is not allowed to access the database.");
         console.error("Make sure to allow access from your hosting provider's IP range in Supabase.");
+      } else if (errorStr.includes('SASL') || errorStr.includes('SCRAM')) {
+        console.error("SASL AUTHENTICATION ERROR: There's an issue with the authentication process.");
+        console.error("This is often caused by:");
+        console.error("1. Special characters in the password that need URL encoding");
+        console.error("2. Using the wrong connection string format");
+        console.error("3. Using the pooler URL with incorrect credentials");
+        console.error("\nTry using the standard connection string format:");
+        console.error("DATABASE_URL=\"postgresql://postgres:YourPassword@db.bqolppbumvauzjjbqaxy.supabase.co:5432/postgres\"");
+        console.error("\nMake sure to URL encode special characters in your password:");
+        console.error("@ → %40, # → %23, $ → %24, etc.");
       }
     }
   }
