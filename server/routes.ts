@@ -1,12 +1,14 @@
-import type { Express, Request } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import multer from "multer";
 import { randomUUID } from "crypto";
-import { insertImageAnalysisSchema } from "@shared/schema";
+import { insertImageAnalysisSchema, insertSongAnalysisSchema, imageAnalyses, songAnalyses } from "@shared/schema";
 import { storage } from "./storage";
 import { analyzeImage } from "./lib/openai";
+import { analyzeSong } from "./lib/song-analysis";
 import { setupAuth } from "./auth";
-import { syncSchema } from "./db";
+import { syncSchema, db } from "./db";
+import { eq } from "drizzle-orm";
 
 // Configure multer for memory storage
 const upload = multer({ 
@@ -14,18 +16,18 @@ const upload = multer({
   limits: {
     fileSize: 5 * 1024 * 1024, // 5MB limit
   },
-  fileFilter: (_req, file, cb) => {
+  fileFilter: (_req: any, file: any, cb: any) => {
     const allowedMimes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
     if (allowedMimes.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error('Invalid file type. Only JPEG, PNG, GIF and WEBP are allowed.') as any);
+      cb(new Error('Invalid file type. Only JPEG, PNG, GIF and WEBP are allowed.'));
     }
   }
 });
 
 // Authentication middleware
-function isAuthenticated(req: Request, res: any, next: any) {
+function isAuthenticated(req: Request, res: Response, next: NextFunction) {
   if (req.isAuthenticated()) {
     return next();
   }
@@ -40,7 +42,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   await syncSchema();
   
   // API endpoint for image analysis (authenticated users)
-  app.post('/api/analyze', isAuthenticated, upload.single('image'), async (req, res) => {
+  app.post('/api/analyze/image', isAuthenticated, upload.single('image'), async (req: any, res: Response) => {
     try {
       // Ensure file was uploaded
       if (!req.file) {
@@ -64,7 +66,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         rizzScore: analysis.rizzScore,
         mysticTitle: analysis.mysticTitle,
         analysisText: analysis.analysisText,
-        isPublic: false // Default to private
+        isPublic: false, // Default to private
+        contentType: "image"
       };
       
       // Validate data
@@ -82,8 +85,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // API endpoint for song analysis (authenticated users)
+  app.post('/api/analyze/song', isAuthenticated, async (req: any, res: Response) => {
+    try {
+      // Ensure song name was provided
+      const { songName } = req.body;
+      if (!songName) {
+        return res.status(400).json({ message: "No song name provided" });
+      }
+
+      // Generate a unique ID for this analysis
+      const songId = randomUUID();
+      
+      // Analyze the song name using OpenAI API
+      const analysis = await analyzeSong(songName);
+      
+      // Create the analysis record
+      const analysisData = {
+        songId,
+        songName,
+        userId: req.user.id, // Link analysis to user
+        auraScore: analysis.auraScore,
+        rizzScore: analysis.rizzScore,
+        mysticTitle: analysis.mysticTitle,
+        analysisText: analysis.analysisText,
+        isPublic: false, // Default to private
+        contentType: "song"
+      };
+      
+      // Validate data
+      const validatedData = insertSongAnalysisSchema.parse(analysisData);
+      
+      // Save to database
+      const savedAnalysis = await storage.createSongAnalysis(validatedData);
+      
+      return res.status(200).json(savedAnalysis);
+    } catch (error: any) {
+      console.error('Error processing song:', error);
+      return res.status(500).json({ 
+        message: error.message || "Error processing song" 
+      });
+    }
+  });
+
   // API endpoint for guest image analysis (no authentication required)
-  app.post('/api/analyze/guest', upload.single('image'), async (req, res) => {
+  app.post('/api/analyze/image/guest', upload.single('image'), async (req: any, res: Response) => {
     try {
       // Ensure file was uploaded
       if (!req.file) {
@@ -107,6 +153,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         rizzScore: analysis.rizzScore,
         mysticTitle: analysis.mysticTitle,
         analysisText: analysis.analysisText,
+        contentType: "image",
         createdAt: new Date()
       });
     } catch (error: any) {
@@ -117,11 +164,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get user's analysis history
-  app.get('/api/analyses', isAuthenticated, async (req, res) => {
+  // API endpoint for guest song analysis (no authentication required)
+  app.post('/api/analyze/song/guest', async (req, res) => {
     try {
-      const analyses = await storage.getUserAnalyses(req.user.id);
-      return res.status(200).json(analyses);
+      // Ensure song name was provided
+      const { songName } = req.body;
+      if (!songName) {
+        return res.status(400).json({ message: "No song name provided" });
+      }
+
+      // Generate a unique ID for this analysis
+      const songId = randomUUID();
+      
+      // Analyze the song name using OpenAI API
+      const analysis = await analyzeSong(songName);
+      
+      // For guest analysis, we don't need to store it in the database
+      // Just return the results directly
+      return res.status(200).json({
+        songId,
+        songName,
+        auraScore: analysis.auraScore,
+        rizzScore: analysis.rizzScore,
+        mysticTitle: analysis.mysticTitle,
+        analysisText: analysis.analysisText,
+        contentType: "song",
+        createdAt: new Date()
+      });
+    } catch (error: any) {
+      console.error('Error processing song:', error);
+      return res.status(500).json({ 
+        message: error.message || "Error processing song" 
+      });
+    }
+  });
+
+  // Get user's analysis history (includes both image and song analyses)
+  app.get('/api/analyses', isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const imageAnalyses = await storage.getUserImageAnalyses(req.user.id);
+      const songAnalyses = await storage.getUserSongAnalyses(req.user.id);
+      
+      // Combine and sort by createdAt (newest first)
+      const allAnalyses = [...imageAnalyses, ...songAnalyses].sort((a, b) => 
+        b.createdAt.getTime() - a.createdAt.getTime()
+      );
+      
+      return res.status(200).json(allAnalyses);
     } catch (error: any) {
       console.error('Error fetching analyses:', error);
       return res.status(500).json({
@@ -130,8 +219,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Toggle public/private status of an analysis
-  app.post('/api/analyses/:id/toggle-public', isAuthenticated, async (req, res) => {
+  // Toggle public/private status of an image analysis
+  app.post('/api/analyses/image/:id/toggle-public', isAuthenticated, async (req: any, res: Response) => {
     try {
       const analysisId = parseInt(req.params.id);
       const analysis = await storage.getImageAnalysis(analysisId);
@@ -161,13 +250,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get public analyses
+  // Toggle public/private status of a song analysis
+  app.post('/api/analyses/song/:id/toggle-public', isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const analysisId = parseInt(req.params.id);
+      const analysis = await storage.getSongAnalysis(analysisId);
+      
+      if (!analysis) {
+        return res.status(404).json({ message: "Analysis not found" });
+      }
+      
+      if (analysis.userId !== req.user.id) {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+      
+      // Toggle isPublic status
+      const updatedAnalysis = await db
+        .update(songAnalyses)
+        .set({ isPublic: !analysis.isPublic })
+        .where(eq(songAnalyses.id, analysisId))
+        .returning()
+        .then(rows => rows[0]);
+      
+      return res.status(200).json(updatedAnalysis);
+    } catch (error: any) {
+      console.error('Error toggling public status:', error);
+      return res.status(500).json({
+        message: error.message || "Error updating analysis"
+      });
+    }
+  });
+
+  // Get public analyses (includes both image and song analyses)
   app.get('/api/analyses/public', async (req, res) => {
     try {
       // Get limit from query parameter, default to 10
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
-      const analyses = await storage.getPublicAnalyses(limit);
-      return res.status(200).json(analyses);
+      const imageAnalyses = await storage.getPublicImageAnalyses(limit);
+      const songAnalyses = await storage.getPublicSongAnalyses(limit);
+      
+      // Combine and sort by createdAt (newest first)
+      const allAnalyses = [...imageAnalyses, ...songAnalyses].sort((a, b) => 
+        b.createdAt.getTime() - a.createdAt.getTime()
+      ).slice(0, limit);
+      
+      return res.status(200).json(allAnalyses);
     } catch (error: any) {
       console.error('Error fetching public analyses:', error);
       return res.status(500).json({

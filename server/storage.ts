@@ -1,8 +1,11 @@
 import { 
   imageAnalyses, 
+  songAnalyses,
   users, 
   type ImageAnalysis, 
   type InsertImageAnalysis,
+  type SongAnalysis,
+  type InsertSongAnalysis,
   type User, 
   type InsertUser 
 } from "@shared/schema";
@@ -45,6 +48,17 @@ export interface IStorage {
   getImageAnalysis(id: number): Promise<ImageAnalysis | undefined>;
   getImageAnalysisByImageId(imageId: string): Promise<ImageAnalysis | undefined>;
   createImageAnalysis(analysis: InsertImageAnalysis): Promise<ImageAnalysis>;
+  getUserImageAnalyses(userId: number): Promise<ImageAnalysis[]>;
+  getPublicImageAnalyses(limit?: number): Promise<ImageAnalysis[]>;
+  
+  // Song analysis methods
+  getSongAnalysis(id: number): Promise<SongAnalysis | undefined>;
+  getSongAnalysisBySongId(songId: string): Promise<SongAnalysis | undefined>;
+  createSongAnalysis(analysis: InsertSongAnalysis): Promise<SongAnalysis>;
+  getUserSongAnalyses(userId: number): Promise<SongAnalysis[]>;
+  getPublicSongAnalyses(limit?: number): Promise<SongAnalysis[]>;
+  
+  // Combined methods (for backward compatibility)
   getUserAnalyses(userId: number): Promise<ImageAnalysis[]>;
   getPublicAnalyses(limit?: number): Promise<ImageAnalysis[]>;
   
@@ -65,6 +79,7 @@ export class DatabaseStorage implements IStorage {
     });
   }
 
+  // USER METHODS
   async getUser(id: number): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
     return user;
@@ -105,6 +120,7 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
   
+  // IMAGE ANALYSIS METHODS
   async getImageAnalysis(id: number): Promise<ImageAnalysis | undefined> {
     const [analysis] = await db.select().from(imageAnalyses).where(eq(imageAnalyses.id, id));
     return analysis;
@@ -124,7 +140,7 @@ export class DatabaseStorage implements IStorage {
     return analysis;
   }
   
-  async getUserAnalyses(userId: number): Promise<ImageAnalysis[]> {
+  async getUserImageAnalyses(userId: number): Promise<ImageAnalysis[]> {
     return db
       .select()
       .from(imageAnalyses)
@@ -132,13 +148,63 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(imageAnalyses.createdAt));
   }
   
-  async getPublicAnalyses(limit = 10): Promise<ImageAnalysis[]> {
+  async getPublicImageAnalyses(limit = 10): Promise<ImageAnalysis[]> {
     return db
       .select()
       .from(imageAnalyses)
       .where(eq(imageAnalyses.isPublic, true))
       .orderBy(desc(imageAnalyses.createdAt))
       .limit(limit);
+  }
+  
+  // SONG ANALYSIS METHODS
+  async getSongAnalysis(id: number): Promise<SongAnalysis | undefined> {
+    const [analysis] = await db.select().from(songAnalyses).where(eq(songAnalyses.id, id));
+    return analysis;
+  }
+  
+  async getSongAnalysisBySongId(songId: string): Promise<SongAnalysis | undefined> {
+    const [analysis] = await db.select().from(songAnalyses).where(eq(songAnalyses.songId, songId));
+    return analysis;
+  }
+  
+  async createSongAnalysis(insertAnalysis: InsertSongAnalysis): Promise<SongAnalysis> {
+    const [analysis] = await db
+      .insert(songAnalyses)
+      .values(insertAnalysis)
+      .returning();
+    
+    return analysis;
+  }
+  
+  async getUserSongAnalyses(userId: number): Promise<SongAnalysis[]> {
+    return db
+      .select()
+      .from(songAnalyses)
+      .where(eq(songAnalyses.userId, userId))
+      .orderBy(desc(songAnalyses.createdAt));
+  }
+  
+  async getPublicSongAnalyses(limit = 10): Promise<SongAnalysis[]> {
+    return db
+      .select()
+      .from(songAnalyses)
+      .where(eq(songAnalyses.isPublic, true))
+      .orderBy(desc(songAnalyses.createdAt))
+      .limit(limit);
+  }
+  
+  // COMBINED METHODS (for backward compatibility)
+  async getUserAnalyses(userId: number): Promise<ImageAnalysis[]> {
+    // This is a legacy method that now only returns image analyses
+    // Use getUserImageAnalyses and getUserSongAnalyses separately for both types
+    return this.getUserImageAnalyses(userId);
+  }
+  
+  async getPublicAnalyses(limit = 10): Promise<ImageAnalysis[]> {
+    // This is a legacy method that now only returns image analyses
+    // Use getPublicImageAnalyses and getPublicSongAnalyses separately for both types
+    return this.getPublicImageAnalyses(limit);
   }
 }
 
