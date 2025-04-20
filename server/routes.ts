@@ -11,7 +11,7 @@ import { syncSchema, db } from "./db";
 import { eq } from "drizzle-orm";
 
 // Configure multer for memory storage
-const upload = multer({ 
+const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
     fileSize: 5 * 1024 * 1024, // 5MB limit
@@ -37,10 +37,15 @@ function isAuthenticated(req: Request, res: Response, next: NextFunction) {
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication
   setupAuth(app);
-  
-  // Sync database schema
-  await syncSchema();
-  
+
+  // Try to sync database schema, but continue even if it fails
+  try {
+    await syncSchema();
+  } catch (error) {
+    console.warn('Failed to sync database schema, but continuing startup:', error);
+    console.warn('Some database operations may fail until a proper DATABASE_URL is configured.');
+  }
+
   // API endpoint for image analysis (authenticated users)
   app.post('/api/analyze/image', isAuthenticated, upload.single('image'), async (req: any, res: Response) => {
     try {
@@ -51,13 +56,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Generate a unique ID for this analysis
       const imageId = randomUUID();
-      
+
       // Convert file buffer to base64 for OpenAI Vision API
       const base64Image = req.file.buffer.toString('base64');
-      
+
       // Analyze the image using OpenAI Vision API
       const analysis = await analyzeImage(base64Image);
-      
+
       // Create the analysis record
       const analysisData = {
         imageId,
@@ -69,18 +74,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isPublic: false, // Default to private
         contentType: "image"
       };
-      
+
       // Validate data
       const validatedData = insertImageAnalysisSchema.parse(analysisData);
-      
+
       // Save to database
       const savedAnalysis = await storage.createImageAnalysis(validatedData);
-      
+
       return res.status(200).json(savedAnalysis);
     } catch (error: any) {
       console.error('Error processing image:', error);
-      return res.status(500).json({ 
-        message: error.message || "Error processing image" 
+      return res.status(500).json({
+        message: error.message || "Error processing image"
       });
     }
   });
@@ -96,10 +101,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Generate a unique ID for this analysis
       const songId = randomUUID();
-      
+
       // Analyze the song name using OpenAI API
       const analysis = await analyzeSong(songName);
-      
+
       // Create the analysis record
       const analysisData = {
         songId,
@@ -112,18 +117,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isPublic: false, // Default to private
         contentType: "song"
       };
-      
+
       // Validate data
       const validatedData = insertSongAnalysisSchema.parse(analysisData);
-      
+
       // Save to database
       const savedAnalysis = await storage.createSongAnalysis(validatedData);
-      
+
       return res.status(200).json(savedAnalysis);
     } catch (error: any) {
       console.error('Error processing song:', error);
-      return res.status(500).json({ 
-        message: error.message || "Error processing song" 
+      return res.status(500).json({
+        message: error.message || "Error processing song"
       });
     }
   });
@@ -138,13 +143,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Generate a unique ID for this analysis
       const imageId = randomUUID();
-      
+
       // Convert file buffer to base64 for OpenAI Vision API
       const base64Image = req.file.buffer.toString('base64');
-      
+
       // Analyze the image using OpenAI Vision API
       const analysis = await analyzeImage(base64Image);
-      
+
       // For guest analysis, we don't need to store it in the database
       // Just return the results directly
       return res.status(200).json({
@@ -158,8 +163,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error: any) {
       console.error('Error processing image:', error);
-      return res.status(500).json({ 
-        message: error.message || "Error processing image" 
+      return res.status(500).json({
+        message: error.message || "Error processing image"
       });
     }
   });
@@ -175,10 +180,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Generate a unique ID for this analysis
       const songId = randomUUID();
-      
+
       // Analyze the song name using OpenAI API
       const analysis = await analyzeSong(songName);
-      
+
       // For guest analysis, we don't need to store it in the database
       // Just return the results directly
       return res.status(200).json({
@@ -193,8 +198,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error: any) {
       console.error('Error processing song:', error);
-      return res.status(500).json({ 
-        message: error.message || "Error processing song" 
+      return res.status(500).json({
+        message: error.message || "Error processing song"
       });
     }
   });
@@ -204,12 +209,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const imageAnalyses = await storage.getUserImageAnalyses(req.user.id);
       const songAnalyses = await storage.getUserSongAnalyses(req.user.id);
-      
+
       // Combine and sort by createdAt (newest first)
-      const allAnalyses = [...imageAnalyses, ...songAnalyses].sort((a, b) => 
+      const allAnalyses = [...imageAnalyses, ...songAnalyses].sort((a, b) =>
         b.createdAt.getTime() - a.createdAt.getTime()
       );
-      
+
       return res.status(200).json(allAnalyses);
     } catch (error: any) {
       console.error('Error fetching analyses:', error);
@@ -224,15 +229,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const analysisId = parseInt(req.params.id);
       const analysis = await storage.getImageAnalysis(analysisId);
-      
+
       if (!analysis) {
         return res.status(404).json({ message: "Analysis not found" });
       }
-      
+
       if (analysis.userId !== req.user.id) {
         return res.status(403).json({ message: "Unauthorized" });
       }
-      
+
       // Toggle isPublic status
       const updatedAnalysis = await db
         .update(imageAnalyses)
@@ -240,7 +245,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .where(eq(imageAnalyses.id, analysisId))
         .returning()
         .then(rows => rows[0]);
-      
+
       return res.status(200).json(updatedAnalysis);
     } catch (error: any) {
       console.error('Error toggling public status:', error);
@@ -255,15 +260,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const analysisId = parseInt(req.params.id);
       const analysis = await storage.getSongAnalysis(analysisId);
-      
+
       if (!analysis) {
         return res.status(404).json({ message: "Analysis not found" });
       }
-      
+
       if (analysis.userId !== req.user.id) {
         return res.status(403).json({ message: "Unauthorized" });
       }
-      
+
       // Toggle isPublic status
       const updatedAnalysis = await db
         .update(songAnalyses)
@@ -271,7 +276,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .where(eq(songAnalyses.id, analysisId))
         .returning()
         .then(rows => rows[0]);
-      
+
       return res.status(200).json(updatedAnalysis);
     } catch (error: any) {
       console.error('Error toggling public status:', error);
@@ -288,12 +293,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
       const imageAnalyses = await storage.getPublicImageAnalyses(limit);
       const songAnalyses = await storage.getPublicSongAnalyses(limit);
-      
+
       // Combine and sort by createdAt (newest first)
-      const allAnalyses = [...imageAnalyses, ...songAnalyses].sort((a, b) => 
+      const allAnalyses = [...imageAnalyses, ...songAnalyses].sort((a, b) =>
         b.createdAt.getTime() - a.createdAt.getTime()
       ).slice(0, limit);
-      
+
       return res.status(200).json(allAnalyses);
     } catch (error: any) {
       console.error('Error fetching public analyses:', error);

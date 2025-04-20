@@ -33,14 +33,25 @@ The application will automatically generate a secure session secret if one is no
 
 All database operations are handled through Supabase. The application uses the Supabase client for authentication and database operations.
 
-For direct database access (required for Drizzle ORM), you need to set up a PostgreSQL connection string in your Supabase project:
+### Important: PostgreSQL Connection String Required
+
+For the application to work properly in production, you **must** set up a PostgreSQL connection string from your Supabase project:
 
 ```
 # Get this from Supabase: Project Settings > Database > Connection string > URI
 DATABASE_URL="postgresql://postgres:[YOUR-PASSWORD]@db.[YOUR-PROJECT-REF].supabase.co:5432/postgres"
 ```
 
-If `DATABASE_URL` is not provided, the application will attempt to use the Supabase URL directly, but this may not work for all database operations.
+### Steps to Get Your PostgreSQL Connection String:
+
+1. Log in to your Supabase dashboard
+2. Select your project
+3. Go to Project Settings > Database
+4. Find the "Connection string" section
+5. Select "URI" format
+6. Copy the connection string and replace `[YOUR-PASSWORD]` with your database password
+
+If `DATABASE_URL` is not provided, the application will run in a limited mode where database operations will fail. This is fine for development and testing the UI, but not suitable for production use.
 
 ## Getting Started
 

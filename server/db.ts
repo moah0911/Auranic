@@ -26,9 +26,23 @@ if (!DATABASE_CONFIG.url) {
 }
 
 // Set up database connection for Drizzle ORM
-// If DATABASE_URL is not set, use Supabase URL with PostgreSQL connection string
-// Note: This requires setting up a PostgreSQL database in Supabase
-const connectionString = DATABASE_CONFIG.url || SUPABASE_CONFIG.url;
+// We need a valid PostgreSQL connection string for Drizzle ORM
+// If DATABASE_URL is not set, we'll use a dummy connection string for development
+// In production, you MUST set a proper DATABASE_URL
+let connectionString = DATABASE_CONFIG.url;
+
+// If no DATABASE_URL is provided, create a dummy connection for development only
+if (!connectionString) {
+  if (process.env.NODE_ENV === 'production') {
+    console.error('ERROR: DATABASE_URL is required in production!');
+    console.error('Please set a valid PostgreSQL connection string from Supabase.');
+    // We'll continue with a dummy URL, but it will likely fail for actual DB operations
+  }
+
+  // Use a dummy connection string that won't actually connect but prevents startup errors
+  connectionString = 'postgresql://postgres:password@localhost:5432/postgres';
+  console.warn('Using dummy database connection. Most database operations will fail.');
+}
 export const pool = new Pool({ connectionString });
 export const db = drizzle({ client: pool, schema });
 
@@ -42,6 +56,13 @@ export const supabase = createClient(
 export async function syncSchema() {
   try {
     console.log("Syncing database schema...");
+
+    // Skip database sync if we're using a dummy connection
+    if (!DATABASE_CONFIG.url && process.env.NODE_ENV === 'production') {
+      console.warn("Skipping database schema sync because DATABASE_URL is not set in production.");
+      console.warn("Please set a valid PostgreSQL connection string from Supabase.");
+      return;
+    }
 
     // Create tables directly with SQL since we don't have drizzle migrations set up
     await pool.query(`
@@ -85,5 +106,12 @@ export async function syncSchema() {
     console.log("Schema sync complete!");
   } catch (error) {
     console.error("Error syncing database schema:", error);
+
+    // In production, log a more helpful error message
+    if (process.env.NODE_ENV === 'production') {
+      console.error("\nDatabase connection failed. Please check your DATABASE_URL environment variable.");
+      console.error("You need to set up a PostgreSQL database in Supabase and use the connection string.");
+      console.error("Format: postgresql://postgres:password@db.your-project-ref.supabase.co:5432/postgres\n");
+    }
   }
 }
