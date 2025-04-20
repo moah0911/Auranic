@@ -42,6 +42,14 @@ if (!connectionString) {
   // Use a dummy connection string that won't actually connect but prevents startup errors
   connectionString = 'postgresql://postgres:password@localhost:5432/postgres';
   console.warn('Using dummy database connection. Most database operations will fail.');
+} else {
+  // Log connection info (without password) for debugging
+  try {
+    const connUrl = new URL(connectionString);
+    console.log(`Connecting to database at ${connUrl.host} with user ${connUrl.username}`);
+  } catch (e) {
+    console.warn('Invalid database connection string format:', e);
+  }
 }
 export const pool = new Pool({ connectionString });
 export const db = drizzle({ client: pool, schema });
@@ -111,7 +119,22 @@ export async function syncSchema() {
     if (process.env.NODE_ENV === 'production') {
       console.error("\nDatabase connection failed. Please check your DATABASE_URL environment variable.");
       console.error("You need to set up a PostgreSQL database in Supabase and use the connection string.");
-      console.error("Format: postgresql://postgres:password@db.your-project-ref.supabase.co:5432/postgres\n");
+      console.error("\nRecommended format (connection pooling):");
+      console.error("postgresql://postgres.[PROJECT-REF]:[PASSWORD]@aws-0-us-east-1.pooler.supabase.com:5432/postgres\n");
+
+      // Check for common errors
+      const errorStr = String(error);
+      if (errorStr.includes('ENETUNREACH')) {
+        console.error("NETWORK ERROR: Cannot reach the database server. This could be due to:");
+        console.error("1. IPv6 connectivity issues - try using the connection pooling URL instead");
+        console.error("2. Firewall blocking outbound connections to Supabase");
+        console.error("3. DNS resolution problems");
+      } else if (errorStr.includes('password authentication failed')) {
+        console.error("AUTHENTICATION ERROR: The password in your connection string is incorrect.");
+      } else if (errorStr.includes('no pg_hba.conf entry')) {
+        console.error("ACCESS ERROR: Your IP address is not allowed to access the database.");
+        console.error("Make sure to allow access from your hosting provider's IP range in Supabase.");
+      }
     }
   }
 }

@@ -38,7 +38,11 @@ All database operations are handled through Supabase. The application uses the S
 For the application to work properly in production, you **must** set up a PostgreSQL connection string from your Supabase project:
 
 ```
-# Get this from Supabase: Project Settings > Database > Connection string > URI
+# Get this from Supabase: Project Settings > Database > Connection string
+# Option 1: Direct connection (recommended for production)
+DATABASE_URL="postgresql://postgres.[YOUR-PROJECT-REF]:[YOUR-PASSWORD]@aws-0-us-east-1.pooler.supabase.com:5432/postgres"
+
+# Option 2: URI format (alternative)
 DATABASE_URL="postgresql://postgres:[YOUR-PASSWORD]@db.[YOUR-PROJECT-REF].supabase.co:5432/postgres"
 ```
 
@@ -48,8 +52,19 @@ DATABASE_URL="postgresql://postgres:[YOUR-PASSWORD]@db.[YOUR-PROJECT-REF].supaba
 2. Select your project
 3. Go to Project Settings > Database
 4. Find the "Connection string" section
-5. Select "URI" format
-6. Copy the connection string and replace `[YOUR-PASSWORD]` with your database password
+5. Choose one of these options:
+   - **Direct Connection (Recommended)**: Select "URI + Connection Pooling" format
+   - **Alternative**: Select "URI" format
+6. Copy the connection string and replace the password placeholder with your database password
+
+### Troubleshooting Connection Issues
+
+If you encounter network errors (like ENETUNREACH):
+
+1. Try the direct connection format with connection pooling first
+2. Make sure your hosting provider allows outbound connections to Supabase
+3. Check if there are any firewall rules blocking the connection
+4. Verify that your database password doesn't contain special characters that need URL encoding
 
 If `DATABASE_URL` is not provided, the application will run in a limited mode where database operations will fail. This is fine for development and testing the UI, but not suitable for production use.
 
