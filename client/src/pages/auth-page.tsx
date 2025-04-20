@@ -342,7 +342,7 @@ export default function AuthPage() {
       {/* Hero Image Section */}
       <div 
         className="w-full md:w-1/2 bg-cover bg-center min-h-[400px] md:min-h-screen relative overflow-hidden"
-        style={{ backgroundImage: `url(${typeof glitchBg === 'string' ? glitchBg : glitchBg.url})` }}
+        style={{ backgroundImage: `url(${glitchBg})` }}
       >
         <div className="absolute inset-0 bg-gradient-to-b from-black/70 to-black/30 flex flex-col justify-center items-center p-8 text-center">
           <h2 className="text-5xl md:text-7xl font-bold mb-4 text-white tracking-wide">
